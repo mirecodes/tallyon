@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { TargetCurrency, DailyAggregate, ValuatedTransaction } from '../types';
 import { formatCurrency, toLocalDateString } from '../utils/currency';
-import { ChevronLeft, ChevronRight, Calendar as CalIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalIcon, Banknote } from 'lucide-react';
 
 interface CalendarMatrixViewProps {
   calendarMap: Record<string, DailyAggregate>;
@@ -433,6 +433,15 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                         <span className="tag-pill-outline" style={{ fontSize: '0.6875rem' }}>
                           {tx.category}
                         </span>
+                        {tx.isCash && (
+                          <span
+                            className="tag-pill-outline tag-pill-cash"
+                            style={{ fontSize: '0.6875rem', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                          >
+                            <Banknote size={11} strokeWidth={2.5} />
+                            Cash
+                          </span>
+                        )}
                         <span
                           className={`tag-pill-outline ${
                             tx.expenseNature === 'ONE_OFF'

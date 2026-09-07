@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { CurrencyCode, ExpenseNature, Transaction } from '../types';
-import { X, Plus, Trash2, Copy, AlertCircle } from 'lucide-react';
+import { X, Plus, Trash2, Copy, AlertCircle, Banknote } from 'lucide-react';
 import { toLocalDateString } from '../utils/currency';
 import { useCategories } from '../utils/categories';
 
@@ -21,6 +21,7 @@ interface FormRow {
   category: string;
   expenseNature: ExpenseNature;
   isFixed: boolean;
+  isCash: boolean;
   transactionDate: string;
   transactionTime: string;
 }
@@ -126,6 +127,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     category: defaultCategory,
     expenseNature: 'ONE_OFF',
     isFixed: false,
+    isCash: false,
     transactionDate: defaultDate,
     transactionTime: defaultTime,
   });
@@ -170,6 +172,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           category: editingTransaction.category,
           expenseNature: editingTransaction.expenseNature,
           isFixed: !!editingTransaction.isFixed,
+          isCash: !!editingTransaction.isCash,
           transactionDate: toLocalDateString(d),
           transactionTime: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
         },
@@ -183,6 +186,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           category: defaultCategory,
           expenseNature: 'ONE_OFF',
           isFixed: false,
+          isCash: false,
           transactionDate: curDate,
           transactionTime: curTime,
         },
@@ -251,6 +255,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         category: r.category || 'Other',
         expenseNature: r.isFixed ? 'RECURRING_MONTHLY' : r.expenseNature,
         isFixed: r.isFixed,
+        isCash: r.isCash,
         transactionTime: isoTime,
       });
     }
@@ -580,35 +585,74 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 </div>
               </div>
 
-              {/* Fixed Monthly Expense Option */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 10,
-                  padding: '10px 14px',
-                  borderRadius: 10,
-                  backgroundColor: rows[0].isFixed ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-                  border: rows[0].isFixed ? '1px solid var(--primary-blue-tint)' : '1px solid var(--border-light)',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  transition: 'all 0.15s ease',
-                }}
-                onClick={() => handleRowChange(0, 'isFixed', !rows[0].isFixed)}
-              >
-                <input
-                  type="checkbox"
-                  id="fixed-expense-chk"
-                  checked={rows[0].isFixed}
-                  onChange={() => {}} // Controlled via container onClick
-                  style={{ marginTop: 3, cursor: 'pointer', pointerEvents: 'none' }}
-                />
-                <div style={{ cursor: 'pointer', fontSize: '0.8125rem' }}>
-                  <span style={{ fontWeight: 700, color: rows[0].isFixed ? 'var(--primary-blue)' : 'var(--text-primary)' }}>
-                    Fixed Recurring Expense
-                  </span>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    When enabled, this monthly commitment automatically carries over to all subsequent months as a planned fixed expense.
+              {/* Fixed & Cash Options in Single Mode */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                {/* Fixed Monthly Expense Option */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: '10px 14px',
+                    borderRadius: 10,
+                    backgroundColor: rows[0].isFixed ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                    border: rows[0].isFixed ? '1px solid var(--primary-blue-tint)' : '1px solid var(--border-light)',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onClick={() => handleRowChange(0, 'isFixed', !rows[0].isFixed)}
+                >
+                  <input
+                    type="checkbox"
+                    id="fixed-expense-chk"
+                    checked={rows[0].isFixed}
+                    onChange={() => {}} // Controlled via container onClick
+                    style={{ marginTop: 3, cursor: 'pointer', pointerEvents: 'none' }}
+                  />
+                  <div style={{ cursor: 'pointer', fontSize: '0.8125rem' }}>
+                    <span style={{ fontWeight: 700, color: rows[0].isFixed ? 'var(--primary-blue)' : 'var(--text-primary)' }}>
+                      Fixed Expense
+                    </span>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      Repeats monthly across future months.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cash Payment Option */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: '10px 14px',
+                    borderRadius: 10,
+                    backgroundColor: rows[0].isCash ? '#ECFDF5' : 'var(--bg-secondary)',
+                    border: rows[0].isCash ? '1px solid #A7F3D0' : '1px solid var(--border-light)',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onClick={() => handleRowChange(0, 'isCash', !rows[0].isCash)}
+                >
+                  <input
+                    type="checkbox"
+                    id="cash-expense-chk"
+                    checked={rows[0].isCash}
+                    onChange={() => {}} // Controlled via container onClick
+                    style={{ marginTop: 3, cursor: 'pointer', pointerEvents: 'none' }}
+                  />
+                  <div style={{ cursor: 'pointer', fontSize: '0.8125rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontWeight: 700, color: rows[0].isCash ? '#059669' : 'var(--text-primary)' }}>
+                        Paid in Cash
+                      </span>
+                      <Banknote size={15} color={rows[0].isCash ? '#059669' : 'var(--text-muted)'} />
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      Marks this item with a green Cash pill.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -665,12 +709,13 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
                 <thead>
                   <tr style={{ backgroundColor: 'var(--bg-subtle)', textAlign: 'left' }}>
-                    <th style={{ padding: '8px 10px', width: '22%' }}>Title</th>
-                    <th style={{ padding: '8px 10px', width: '13%' }}>Amount</th>
-                    <th style={{ padding: '8px 10px', width: '11%' }}>Currency</th>
-                    <th style={{ padding: '8px 10px', width: '16%' }}>Category</th>
-                    <th style={{ padding: '8px 10px', width: '14%' }}>Cycle</th>
-                    <th style={{ padding: '8px 10px', width: '8%', textAlign: 'center' }}>Fixed?</th>
+                    <th style={{ padding: '8px 10px', width: '20%' }}>Title</th>
+                    <th style={{ padding: '8px 10px', width: '12%' }}>Amount</th>
+                    <th style={{ padding: '8px 10px', width: '10%' }}>Currency</th>
+                    <th style={{ padding: '8px 10px', width: '15%' }}>Category</th>
+                    <th style={{ padding: '8px 10px', width: '13%' }}>Cycle</th>
+                    <th style={{ padding: '8px 10px', width: '7%', textAlign: 'center' }}>Fixed?</th>
+                    <th style={{ padding: '8px 10px', width: '7%', textAlign: 'center' }}>Cash?</th>
                     <th style={{ padding: '8px 10px', width: '11%' }}>Date</th>
                     <th style={{ padding: '8px 10px', width: '5%', textAlign: 'center' }}>Actions</th>
                   </tr>
@@ -744,6 +789,14 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                           checked={row.isFixed}
                           onChange={(e) => handleRowChange(idx, 'isFixed', e.target.checked)}
                           title="Fixed Recurring Expense"
+                        />
+                      </td>
+                      <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={row.isCash}
+                          onChange={(e) => handleRowChange(idx, 'isCash', e.target.checked)}
+                          title="Paid in Cash"
                         />
                       </td>
                       <td style={{ padding: '6px 4px' }}>

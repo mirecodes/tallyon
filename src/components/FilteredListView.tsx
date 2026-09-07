@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Banknote,
 } from 'lucide-react';
 import { getCategoryIconElement, getCategoryColor, useCategories } from '../utils/categories';
 
@@ -620,6 +621,15 @@ export const FilteredListView: React.FC<FilteredListViewProps> = ({
                     <span className="tag-pill-outline" style={{ fontSize: '0.6875rem' }}>
                       {tx.category}
                     </span>
+                    {tx.isCash && (
+                      <span
+                        className="tag-pill-outline tag-pill-cash"
+                        style={{ fontSize: '0.6875rem', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                      >
+                        <Banknote size={11} strokeWidth={2.5} />
+                        Cash
+                      </span>
+                    )}
                     {tx.isFixed ? (
                       <span
                         className="tag-pill-outline"
