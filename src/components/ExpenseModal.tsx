@@ -370,7 +370,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 />
                 <label htmlFor="fixed-expense-chk" style={{ cursor: 'pointer', fontSize: '0.8125rem' }}>
                   <span style={{ fontWeight: 700, color: rows[0].isFixed ? 'var(--primary-blue)' : 'var(--text-primary)' }}>
-                    Fixed Recurring Expense (고정 지출)
+                    Fixed Recurring Expense
                   </span>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
                     When enabled, this monthly commitment automatically carries over to all subsequent months as a planned fixed expense.

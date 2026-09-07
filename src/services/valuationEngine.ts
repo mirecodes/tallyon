@@ -98,18 +98,18 @@ export function evaluateTransactions(
     natureMap[tx.expenseNature] = (natureMap[tx.expenseNature] || 0) + convertedAmount;
   }
 
-  // Calculate Fixed vs Free totals
+  // Calculate Fixed vs Flexible totals
   let fixedTotal = 0;
-  let freeTotal = 0;
+  let flexibleTotal = 0;
   for (const v of valuatedList) {
     if (v.isFixed || v.expenseNature === 'RECURRING_MONTHLY') {
       fixedTotal += v.convertedAmount;
     } else {
-      freeTotal += v.convertedAmount;
+      flexibleTotal += v.convertedAmount;
     }
   }
   const roundedFixedTotal = targetCurrency === 'KRW' ? Math.round(fixedTotal) : Number(fixedTotal.toFixed(2));
-  const roundedFreeTotal = targetCurrency === 'KRW' ? Math.round(freeTotal) : Number(freeTotal.toFixed(2));
+  const roundedFlexibleTotal = targetCurrency === 'KRW' ? Math.round(flexibleTotal) : Number(flexibleTotal.toFixed(2));
 
   // Format Category Breakdown
   const byCategory = Object.entries(categoryMap)
@@ -135,7 +135,7 @@ export function evaluateTransactions(
       targetCurrency,
       grandTotal,
       fixedTotal: roundedFixedTotal,
-      freeTotal: roundedFreeTotal,
+      flexibleTotal: roundedFlexibleTotal,
       byCategory,
       byNature,
     },
