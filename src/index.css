@@ -194,6 +194,13 @@ button {
   color: #7C3AED;
 }
 
+.tag-pill-outline.tag-pill-cash {
+  border-color: #A7F3D0;
+  background-color: #ECFDF5;
+  color: #059669;
+  font-weight: 700;
+}
+
 /* Buttons */
 .btn-primary {
   display: inline-flex;

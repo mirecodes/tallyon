@@ -22,12 +22,16 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     category TEXT NOT NULL,
     expense_nature expense_nature_type NOT NULL DEFAULT 'ONE_OFF',
     is_fixed BOOLEAN NOT NULL DEFAULT FALSE,
+    is_cash BOOLEAN NOT NULL DEFAULT FALSE,
     is_auto_generated BOOLEAN NOT NULL DEFAULT FALSE,
     parent_fixed_id UUID REFERENCES public.transactions(id) ON DELETE SET NULL,
     stopped_after_month VARCHAR(7) CHECK (stopped_after_month ~ '^\d{4}-\d{2}$'),
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
+
+-- Note for existing databases:
+-- ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS is_cash BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_transactions_user_time ON public.transactions(user_id, transaction_time DESC);
