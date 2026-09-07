@@ -3,6 +3,7 @@ import type { TargetCurrency, Transaction, ValuatedTransaction } from './types';
 import { useTransactions } from './hooks/useTransactions';
 import { useExchangeRates } from './hooks/useExchangeRates';
 import { useValuationEngine } from './hooks/useValuationEngine';
+import { useBudgets } from './hooks/useBudgets';
 
 import { Header } from './components/Header';
 import { CurrencySelector } from './components/CurrencySelector';
@@ -11,10 +12,12 @@ import { MetricCards } from './components/MetricCards';
 import { CalendarMatrixView } from './components/CalendarMatrixView';
 import { FilteredListView } from './components/FilteredListView';
 import { BreakdownAnalyticsView } from './components/BreakdownAnalyticsView';
+import { BudgetPlanningView } from './components/BudgetPlanningView';
 import { ExpenseModal } from './components/ExpenseModal';
+import { STATIC_FALLBACK_RATES } from './repositories/LocalStorageExchangeRateRepository';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'transactions' | 'analytics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'transactions' | 'analytics' | 'budget'>('dashboard');
   const [targetCurrency, setTargetCurrency] = useState<TargetCurrency>('KRW');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
@@ -27,6 +30,9 @@ export const App: React.FC = () => {
 
   // Hook 3: Real-time dynamic valuation engine
   const { valuatedList, calendarMap, breakdown } = useValuationEngine(transactions, ratesMap, targetCurrency);
+
+  // Hook 4: Budget planning storage
+  const { budgetsMap, updateBudget } = useBudgets();
 
   const handleOpenAddModal = () => {
     setEditingTx(null);
@@ -48,6 +54,25 @@ export const App: React.FC = () => {
   ) => {
     await editTransaction(id, updates);
   };
+
+  // Compute current month's budget in targetCurrency
+  const now = new Date();
+  const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentBudgetRecord = budgetsMap[currentYearMonth];
+  const rateRecord = ratesMap[`${currentYearMonth}-01`] || ratesMap[Object.keys(ratesMap)[0]] || STATIC_FALLBACK_RATES;
+  const rates = rateRecord.rates;
+
+  let currentMonthlyBudgetInTarget: number | undefined = undefined;
+  if (currentBudgetRecord) {
+    const budgetInKrw =
+      currentBudgetRecord.currency === 'KRW'
+        ? currentBudgetRecord.totalBudget
+        : currentBudgetRecord.totalBudget * (rates[currentBudgetRecord.currency] || STATIC_FALLBACK_RATES.rates[currentBudgetRecord.currency]);
+    currentMonthlyBudgetInTarget =
+      targetCurrency === 'KRW'
+        ? Math.round(budgetInKrw)
+        : Number((budgetInKrw / (rates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1)).toFixed(2));
+  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -71,6 +96,8 @@ export const App: React.FC = () => {
             breakdown={breakdown}
             targetCurrency={targetCurrency}
             totalTransactionsCount={transactions.length}
+            monthlyBudget={currentMonthlyBudgetInTarget}
+            onGoToBudget={() => setActiveTab('budget')}
           />
 
           {/* Tab Views */}
@@ -108,6 +135,16 @@ export const App: React.FC = () => {
 
           {activeTab === 'analytics' && (
             <BreakdownAnalyticsView breakdown={breakdown} targetCurrency={targetCurrency} />
+          )}
+
+          {activeTab === 'budget' && (
+            <BudgetPlanningView
+              budgetsMap={budgetsMap}
+              onSaveBudget={updateBudget}
+              ratesMap={ratesMap}
+              targetCurrency={targetCurrency}
+              breakdown={breakdown}
+            />
           )}
         </div>
       </main>
