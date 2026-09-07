@@ -5,6 +5,7 @@ import { useExchangeRates } from './hooks/useExchangeRates';
 import { useValuationEngine } from './hooks/useValuationEngine';
 
 import { Header } from './components/Header';
+import { ActionBar } from './components/ActionBar';
 import { MetricCards } from './components/MetricCards';
 import { CalendarMatrixView } from './components/CalendarMatrixView';
 import { FilteredListView } from './components/FilteredListView';
@@ -49,18 +50,22 @@ export const App: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Sticky App Header */}
+      {/* Sticky App Header: Clean & Minimal */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        targetCurrency={targetCurrency}
-        setTargetCurrency={setTargetCurrency}
-        onOpenNewModal={handleOpenAddModal}
       />
 
       {/* Main Container */}
-      <main style={{ flex: 1, paddingTop: '2rem', paddingBottom: '3rem' }}>
+      <main style={{ flex: 1, paddingTop: '1.5rem', paddingBottom: '3rem' }}>
         <div className="container">
+          {/* Functional Actions Bar: Currency toggle & Add Expense */}
+          <ActionBar
+            targetCurrency={targetCurrency}
+            setTargetCurrency={setTargetCurrency}
+            onOpenNewModal={handleOpenAddModal}
+          />
+
           {/* Always Display Key Metric KPI Overview */}
           <MetricCards
             breakdown={breakdown}
