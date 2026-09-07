@@ -8,10 +8,10 @@ interface CurrencySelectorProps {
 }
 
 const SUPPORTED_CURRENCIES: Array<{ code: TargetCurrency; symbol: string; label: string }> = [
-  { code: 'CHF', symbol: 'Fr.', label: 'CHF' },
   { code: 'KRW', symbol: '₩', label: 'KRW' },
-  { code: 'USD', symbol: '$', label: 'USD' },
+  { code: 'CHF', symbol: 'Fr.', label: 'CHF' },
   { code: 'EUR', symbol: '€', label: 'EUR' },
+  { code: 'USD', symbol: '$', label: 'USD' },
 ];
 
 export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
