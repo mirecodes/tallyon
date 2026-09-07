@@ -262,22 +262,37 @@ export const FilteredListView: React.FC<FilteredListViewProps> = ({
                     <span className="tag-pill-outline" style={{ fontSize: '0.6875rem' }}>
                       {tx.category}
                     </span>
-                    <span
-                      className={`tag-pill-outline ${
-                        tx.expenseNature === 'ONE_OFF'
-                          ? 'nature-one-off'
+                    {tx.isFixed ? (
+                      <span
+                        className="tag-pill-outline"
+                        style={{
+                          fontSize: '0.6875rem',
+                          backgroundColor: 'var(--bg-tertiary)',
+                          borderColor: 'var(--primary-blue-tint)',
+                          color: 'var(--primary-blue)',
+                          fontWeight: 700,
+                        }}
+                      >
+                        Fixed Monthly
+                      </span>
+                    ) : (
+                      <span
+                        className={`tag-pill-outline ${
+                          tx.expenseNature === 'ONE_OFF'
+                            ? 'nature-one-off'
+                            : tx.expenseNature === 'RECURRING_MONTHLY'
+                            ? 'nature-monthly'
+                            : 'nature-yearly'
+                        }`}
+                        style={{ fontSize: '0.6875rem' }}
+                      >
+                        {tx.expenseNature === 'ONE_OFF'
+                          ? 'One-off'
                           : tx.expenseNature === 'RECURRING_MONTHLY'
-                          ? 'nature-monthly'
-                          : 'nature-yearly'
-                      }`}
-                      style={{ fontSize: '0.6875rem' }}
-                    >
-                      {tx.expenseNature === 'ONE_OFF'
-                        ? 'One-off'
-                        : tx.expenseNature === 'RECURRING_MONTHLY'
-                        ? 'Monthly'
-                        : 'Yearly'}
-                    </span>
+                          ? 'Monthly'
+                          : 'Yearly'}
+                      </span>
+                    )}
                   </div>
 
                   <div

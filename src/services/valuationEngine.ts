@@ -98,6 +98,19 @@ export function evaluateTransactions(
     natureMap[tx.expenseNature] = (natureMap[tx.expenseNature] || 0) + convertedAmount;
   }
 
+  // Calculate Fixed vs Free totals
+  let fixedTotal = 0;
+  let freeTotal = 0;
+  for (const v of valuatedList) {
+    if (v.isFixed || v.expenseNature === 'RECURRING_MONTHLY') {
+      fixedTotal += v.convertedAmount;
+    } else {
+      freeTotal += v.convertedAmount;
+    }
+  }
+  const roundedFixedTotal = targetCurrency === 'KRW' ? Math.round(fixedTotal) : Number(fixedTotal.toFixed(2));
+  const roundedFreeTotal = targetCurrency === 'KRW' ? Math.round(freeTotal) : Number(freeTotal.toFixed(2));
+
   // Format Category Breakdown
   const byCategory = Object.entries(categoryMap)
     .map(([category, amount]) => {
@@ -121,6 +134,8 @@ export function evaluateTransactions(
     breakdown: {
       targetCurrency,
       grandTotal,
+      fixedTotal: roundedFixedTotal,
+      freeTotal: roundedFreeTotal,
       byCategory,
       byNature,
     },
