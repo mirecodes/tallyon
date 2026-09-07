@@ -1,7 +1,7 @@
 import React from 'react';
 import type { TargetCurrency, AnalyticsBreakdown } from '../types';
 import { formatCurrency } from '../utils/currency';
-import { TrendingDown, Calendar, CreditCard } from 'lucide-react';
+import { Calendar, ChevronRight } from 'lucide-react';
 
 interface MetricCardsProps {
   breakdown: AnalyticsBreakdown;
@@ -22,7 +22,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   flexibleBudget: customFlexibleBudget,
   onGoToBudget,
 }) => {
-  // Use user-configured monthly budget if provided, otherwise default estimation
+  // Configured monthly budget or standard default
   const totalBudget =
     customBudget && customBudget > 0
       ? customBudget
@@ -34,6 +34,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       ? 2100
       : 3000000;
 
+  // Auto-calculated fixed and flexible budgets
   const fixedBudget =
     customFixedBudget !== undefined && customFixedBudget > 0
       ? customFixedBudget
@@ -44,219 +45,236 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       ? customFlexibleBudget
       : Math.max(0, totalBudget - fixedBudget);
 
-  const budgetUsagePercent = Math.min(
-    100,
-    totalBudget > 0 ? Math.round((breakdown.grandTotal / totalBudget) * 100) : 0
-  );
+  // Spent amounts
+  const fixedSpent = breakdown.fixedTotal;
+  const flexibleSpent = breakdown.flexibleTotal;
+  const totalSpent = breakdown.grandTotal;
 
-  const fixedUsagePercent = Math.min(
-    100,
-    fixedBudget > 0 ? Math.round((breakdown.fixedTotal / fixedBudget) * 100) : 0
-  );
+  // Percentages relative to total budget
+  const fixedPct = totalBudget > 0 ? (fixedSpent / totalBudget) * 100 : 0;
+  const flexiblePct = totalBudget > 0 ? (flexibleSpent / totalBudget) * 100 : 0;
+  const totalUsagePct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
 
-  const flexibleUsagePercent = Math.min(
-    100,
-    flexibleBudget > 0 ? Math.round((breakdown.flexibleTotal / flexibleBudget) * 100) : 0
-  );
-
-  const fixedRatioPercent = totalBudget > 0 ? Math.round((fixedBudget / totalBudget) * 100) : 0;
-  const flexibleRatioPercent = totalBudget > 0 ? Math.round((flexibleBudget / totalBudget) * 100) : 0;
-
-  const isWarning = budgetUsagePercent >= 85;
+  // Flexible budget internal usage percentage
+  const flexibleQuotaUsagePct =
+    flexibleBudget > 0 ? Math.round((flexibleSpent / flexibleBudget) * 100) : 0;
 
   return (
     <div
+      className="card"
       style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '1.25rem',
+        padding: '1.5rem 1.75rem',
         marginBottom: '2rem',
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--border-light)',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)',
       }}
     >
-      {/* 1. Total Expenditure */}
-      <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+      {/* 1. Header Row: Total Expenditure & Monthly Budget Button */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          marginBottom: '1.25rem',
+        }}
+      >
+        <div>
+          <span
+            style={{
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
             Total Expenditure
           </span>
-          <span
-            style={{
-              padding: '3px 8px',
-              borderRadius: 6,
-              backgroundColor: 'var(--expense-bg)',
-              color: 'var(--expense-rose)',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <TrendingDown size={14} /> Total
-          </span>
-        </div>
-        <div
-          className="tabular-nums"
-          style={{
-            fontSize: '1.875rem',
-            fontWeight: 800,
-            letterSpacing: '-0.03em',
-            color: 'var(--text-primary)',
-            lineHeight: 1.1,
-            marginBottom: '0.5rem',
-          }}
-        >
-          {formatCurrency(breakdown.grandTotal, targetCurrency)}
-        </div>
-        <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-          Aggregated across {totalTransactionsCount} recorded items
-        </div>
-      </div>
-
-      {/* 2. Fixed vs Flexible Spending Snapshot */}
-      <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-            Fixed vs Flexible Spending
-          </span>
-          <span
-            style={{
-              padding: '3px 8px',
-              borderRadius: 6,
-              backgroundColor: 'var(--bg-tertiary)',
-              color: 'var(--primary-blue)',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <CreditCard size={14} /> Commitments
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-          {/* Fixed Spent */}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2 }}>
-              Fixed Expenses
-            </div>
-            <div className="tabular-nums" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary-blue)' }}>
-              {formatCurrency(breakdown.fixedTotal, targetCurrency)}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              {breakdown.grandTotal > 0 ? Math.round((breakdown.fixedTotal / breakdown.grandTotal) * 100) : 0}% of total
-            </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginTop: 4, flexWrap: 'wrap' }}>
+            <span
+              className="tabular-nums"
+              style={{
+                fontSize: '2.25rem',
+                fontWeight: 800,
+                letterSpacing: '-0.03em',
+                color: 'var(--text-primary)',
+                lineHeight: 1.1,
+              }}
+            >
+              {formatCurrency(totalSpent, targetCurrency)}
+            </span>
+            <span style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)' }}>
+              of <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(totalBudget, targetCurrency)}</strong>{' '}
+              monthly budget ({totalUsagePct}%)
+            </span>
           </div>
-
-          {/* Flexible Spent */}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2 }}>
-              Flexible
-            </div>
-            <div className="tabular-nums" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {formatCurrency(breakdown.flexibleTotal, targetCurrency)}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              {breakdown.grandTotal > 0 ? Math.round((breakdown.flexibleTotal / breakdown.grandTotal) * 100) : 0}% of total
-            </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
+            {totalTransactionsCount} recorded items this month
           </div>
         </div>
-      </div>
 
-      {/* 3. Monthly Budget Planning & Fixed/Flexible Quotas */}
-      <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-            Monthly Budget
-          </span>
+        {/* Quick Budget Jump Button */}
+        {onGoToBudget && (
           <button
             type="button"
             onClick={onGoToBudget}
+            className="btn-secondary"
             style={{
-              padding: '3px 8px',
-              borderRadius: 6,
-              backgroundColor: isWarning ? 'var(--warning-bg)' : 'var(--income-bg)',
-              color: isWarning ? 'var(--warning-amber)' : 'var(--income-emerald)',
-              fontSize: '0.75rem',
-              fontWeight: 700,
+              padding: '8px 14px',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
-              cursor: onGoToBudget ? 'pointer' : 'default',
-              border: 'none',
+              gap: 6,
+              borderRadius: 8,
             }}
-            title="Click to view and edit budget"
+            title="Configure Monthly Budget"
           >
-            <Calendar size={14} /> {budgetUsagePercent}% Used
+            <Calendar size={14} color="var(--primary-blue)" />
+            <span>Manage Budget</span>
+            <ChevronRight size={14} />
           </button>
-        </div>
+        )}
+      </div>
 
-        {/* Total Budget Remaining */}
-        <div
-          className="tabular-nums"
-          style={{
-            fontSize: '1.25rem',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            marginBottom: '0.5rem',
-          }}
-        >
-          {formatCurrency(Math.max(0, totalBudget - breakdown.grandTotal), targetCurrency)}{' '}
-          <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>
-            left of {formatCurrency(totalBudget, targetCurrency)}
-          </span>
-        </div>
-
-        {/* Progress Bar for Overall Budget */}
+      {/* 2. Visual Budget Progress Bar (Fixed in Red, Flexible in Green) */}
+      <div style={{ marginBottom: '1.5rem' }}>
         <div
           style={{
             width: '100%',
-            height: 6,
+            height: 10,
             backgroundColor: 'var(--border-light)',
             borderRadius: 9999,
             overflow: 'hidden',
-            marginBottom: '0.75rem',
+            display: 'flex',
           }}
         >
+          {/* Fixed Expense Bar (Red) */}
           <div
             style={{
-              width: `${budgetUsagePercent}%`,
+              width: `${Math.min(100, fixedPct)}%`,
               height: '100%',
-              backgroundColor: isWarning ? 'var(--warning-amber)' : 'var(--primary-blue)',
-              borderRadius: 9999,
+              backgroundColor: 'var(--expense-rose)',
               transition: 'width 0.4s ease',
             }}
+            title={`Fixed Expenses: ${formatCurrency(fixedSpent, targetCurrency)}`}
+          />
+          {/* Flexible Spent Bar (Green) */}
+          <div
+            style={{
+              width: `${Math.min(Math.max(0, 100 - fixedPct), flexiblePct)}%`,
+              height: '100%',
+              backgroundColor: 'var(--income-emerald)',
+              transition: 'width 0.4s ease',
+            }}
+            title={`Flexible Spending: ${formatCurrency(flexibleSpent, targetCurrency)}`}
           />
         </div>
+      </div>
 
-        {/* Sub-breakdown: Fixed Budget vs Flexible Budget Proportion and Usage */}
+      {/* 3. Sub-Breakdown: Fixed Commitments (Red) vs Flexible Spending (Green) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: '1rem',
+          paddingTop: '1.25rem',
+          borderTop: '1px solid var(--border-light)',
+        }}
+      >
+        {/* Fixed Commitments (Red) */}
         <div
           style={{
+            padding: '12px 16px',
+            borderRadius: 10,
+            backgroundColor: 'var(--bg-secondary)',
+            borderLeft: '4px solid var(--expense-rose)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            fontSize: '0.75rem',
-            color: 'var(--text-muted)',
-            paddingTop: '0.5rem',
-            borderTop: '1px solid var(--border-subtle)',
           }}
         >
           <div>
-            <span>Fixed ({fixedRatioPercent}%): </span>
-            <strong style={{ color: 'var(--primary-blue)' }}>
-              {formatCurrency(breakdown.fixedTotal, targetCurrency)} / {formatCurrency(fixedBudget, targetCurrency)}
-            </strong>{' '}
-            <span>({fixedUsagePercent}%)</span>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+              Fixed Expenses
+            </div>
+            <div
+              className="tabular-nums"
+              style={{
+                fontSize: '1.25rem',
+                fontWeight: 800,
+                marginTop: 2,
+                color: 'var(--expense-rose)',
+              }}
+            >
+              {formatCurrency(fixedSpent, targetCurrency)}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              {totalSpent > 0 ? Math.round((fixedSpent / totalSpent) * 100) : 0}% of total spent
+            </div>
           </div>
+          <span
+            style={{
+              padding: '4px 8px',
+              borderRadius: 6,
+              backgroundColor: 'var(--expense-bg)',
+              color: 'var(--expense-rose)',
+              fontSize: '0.6875rem',
+              fontWeight: 700,
+            }}
+          >
+            Fixed Commitments
+          </span>
+        </div>
+
+        {/* Flexible Spending (Green) */}
+        <div
+          style={{
+            padding: '12px 16px',
+            borderRadius: 10,
+            backgroundColor: 'var(--bg-secondary)',
+            borderLeft: '4px solid var(--income-emerald)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <div>
-            <span>Flexible ({flexibleRatioPercent}%): </span>
-            <strong style={{ color: 'var(--text-primary)' }}>
-              {formatCurrency(breakdown.flexibleTotal, targetCurrency)} / {formatCurrency(flexibleBudget, targetCurrency)}
-            </strong>{' '}
-            <span>({flexibleUsagePercent}%)</span>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+              Flexible Spending
+            </div>
+            <div
+              className="tabular-nums"
+              style={{
+                fontSize: '1.25rem',
+                fontWeight: 800,
+                marginTop: 2,
+                color: 'var(--income-emerald)',
+              }}
+            >
+              {formatCurrency(flexibleSpent, targetCurrency)}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              {flexibleBudget > 0
+                ? `${formatCurrency(Math.max(0, flexibleBudget - flexibleSpent), targetCurrency)} left (${flexibleQuotaUsagePct}% used)`
+                : `${totalSpent > 0 ? Math.round((flexibleSpent / totalSpent) * 100) : 0}% of total spent`}
+            </div>
           </div>
+          <span
+            style={{
+              padding: '4px 8px',
+              borderRadius: 6,
+              backgroundColor: 'var(--income-bg)',
+              color: 'var(--income-emerald)',
+              fontSize: '0.6875rem',
+              fontWeight: 700,
+            }}
+          >
+            Flexible Budget
+          </span>
         </div>
       </div>
     </div>
