@@ -117,11 +117,22 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
       const userId = await ensureAuthUser();
       const insertPayload = toDbTransactionInsert(item, userId);
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('transactions')
         .insert(insertPayload)
         .select()
         .single();
+
+      if (error && error.code === 'PGRST204' && (error.message?.includes('is_cash') || (error as any).details?.includes('is_cash'))) {
+        delete (insertPayload as any).is_cash;
+        const retry = await supabase
+          .from('transactions')
+          .insert(insertPayload)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
       return toDomainTransaction(data as DbTransaction);
@@ -140,12 +151,26 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
 
     try {
       const userId = await ensureAuthUser();
-      const insertPayloads = items.map((item) => toDbTransactionInsert(item, userId));
+      let insertPayloads = items.map((item) => toDbTransactionInsert(item, userId));
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('transactions')
         .insert(insertPayloads)
         .select();
+
+      if (error && error.code === 'PGRST204' && (error.message?.includes('is_cash') || (error as any).details?.includes('is_cash'))) {
+        insertPayloads = insertPayloads.map((p) => {
+          const copy = { ...p };
+          delete (copy as any).is_cash;
+          return copy;
+        });
+        const retry = await supabase
+          .from('transactions')
+          .insert(insertPayloads)
+          .select();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
       return ((data as DbTransaction[]) || []).map(toDomainTransaction);
@@ -178,13 +203,27 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
       if (updates.parentFixedId !== undefined) dbUpdates.parent_fixed_id = updates.parentFixedId || null;
       if (updates.stoppedAfterMonth !== undefined) dbUpdates.stopped_after_month = updates.stoppedAfterMonth || null;
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('transactions')
         .update(dbUpdates)
         .eq('id', id)
         .eq('user_id', userId)
         .select()
         .single();
+
+      // If user's Supabase DB hasn't run the migration for is_cash column yet, retry without is_cash
+      if (error && error.code === 'PGRST204' && (error.message?.includes('is_cash') || (error as any).details?.includes('is_cash'))) {
+        delete dbUpdates.is_cash;
+        const retry = await supabase
+          .from('transactions')
+          .update(dbUpdates)
+          .eq('id', id)
+          .eq('user_id', userId)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
 
@@ -197,8 +236,14 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
 
       return toDomainTransaction(data as DbTransaction);
     } catch (err) {
-      console.warn('Supabase update failed, attempting LocalStorage fallback:', err);
-      return this.fallbackRepo.update(id, updates);
+      console.error('Supabase update failed:', err);
+      // Only fallback to LocalStorage if the record actually exists in LocalStorage
+      try {
+        return await this.fallbackRepo.update(id, updates);
+      } catch {
+        // If not in LocalStorage, throw the original Supabase error so the user gets accurate feedback
+        throw err;
+      }
     }
   }
 
