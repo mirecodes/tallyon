@@ -14,6 +14,7 @@ import { FilteredListView } from './components/FilteredListView';
 import { BreakdownAnalyticsView } from './components/BreakdownAnalyticsView';
 import { BudgetPlanningView } from './components/BudgetPlanningView';
 import { ExpenseModal } from './components/ExpenseModal';
+import { CategoryManagerModal } from './components/CategoryManagerModal';
 import { STATIC_FALLBACK_RATES } from './repositories/LocalStorageExchangeRateRepository';
 import { toLocalDateString } from './utils/currency';
 
@@ -21,6 +22,7 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'transactions' | 'analytics' | 'budget'>('dashboard');
   const [targetCurrency, setTargetCurrency] = useState<TargetCurrency>('KRW');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
   // Global Month Filter: YYYY-MM (e.g. "2026-09") or "ALL"
@@ -101,7 +103,7 @@ export const App: React.FC = () => {
   const { valuatedList, calendarMap, breakdown } = useValuationEngine(scopedTransactions, ratesMap, targetCurrency);
 
   // Hook 4: Budget planning storage
-  const { budgetsMap, updateBudget } = useBudgets();
+  const { budgetsMap, updateBudget, budgetStartMonth, setBudgetStartMonth } = useBudgets();
 
   const handleOpenAddModal = () => {
     setEditingTx(null);
@@ -180,6 +182,70 @@ export const App: React.FC = () => {
       targetCurrency === 'CHF' ? 2000 : targetCurrency === 'USD' ? 2200 : targetCurrency === 'EUR' ? 2100 : 3000000;
   }
 
+  // Cumulative budget calculation from budgetStartMonth up to current month (defaultYM)
+  const cumulativeBudgetInfo = React.useMemo(() => {
+    // Determine start and end year-months
+    const [sY, sM] = (budgetStartMonth || `${now.getFullYear()}-01`).split('-').map(Number);
+    const [eY, eM] = defaultYM.split('-').map(Number);
+
+    let start = new Date(sY, sM - 1, 1);
+    const end = new Date(eY, eM - 1, 1);
+
+    // If start is ahead of end, clamp start to end
+    if (start > end) {
+      start = new Date(end);
+    }
+
+    const months: string[] = [];
+    const curr = new Date(start);
+    while (curr <= end) {
+      const ym = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}`;
+      months.push(ym);
+      curr.setMonth(curr.getMonth() + 1);
+    }
+
+    let totalCumulativeBudget = 0;
+
+    for (const m of months) {
+      const mBudget = budgetsMap[m];
+      const mRatesRecord = ratesMap[`${m}-01`] || ratesMap[Object.keys(ratesMap)[0]] || STATIC_FALLBACK_RATES;
+      const mRates = mRatesRecord.rates;
+
+      if (mBudget) {
+        const totalAmount = (mBudget.baseBudget ?? mBudget.totalBudget ?? 3000000) + (mBudget.extraBudget ?? 0);
+        const budgetInKrw =
+          mBudget.currency === 'KRW'
+            ? totalAmount
+            : totalAmount * (mRates[mBudget.currency] || STATIC_FALLBACK_RATES.rates[mBudget.currency] || 1);
+        const inTarget =
+          targetCurrency === 'KRW'
+            ? Math.round(budgetInKrw)
+            : Number((budgetInKrw / (mRates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1)).toFixed(2));
+        totalCumulativeBudget += inTarget;
+      } else {
+        const fallbackDefault =
+          targetCurrency === 'CHF' ? 2000 : targetCurrency === 'USD' ? 2200 : targetCurrency === 'EUR' ? 2100 : 3000000;
+        totalCumulativeBudget += fallbackDefault;
+      }
+    }
+
+    const totalActualSpent = breakdown.grandTotal;
+    const remainingOrOverAmount = totalCumulativeBudget - totalActualSpent;
+    const isOverBudget = totalActualSpent > totalCumulativeBudget;
+    const percentageUsed = totalCumulativeBudget > 0 ? Math.round((totalActualSpent / totalCumulativeBudget) * 100) : 0;
+
+    return {
+      startYearMonth: months[0] || budgetStartMonth,
+      currentYearMonth: defaultYM,
+      monthsCount: months.length,
+      totalCumulativeBudget: Math.round(totalCumulativeBudget * 100) / 100,
+      totalActualSpent: Math.round(totalActualSpent * 100) / 100,
+      remainingOrOverAmount: Math.round(remainingOrOverAmount * 100) / 100,
+      isOverBudget,
+      percentageUsed,
+    };
+  }, [budgetStartMonth, defaultYM, budgetsMap, ratesMap, targetCurrency, breakdown.grandTotal, now]);
+
   // Auto-calculated Fixed Budget and Flexible Budget
   const currentFixedBudgetInTarget = breakdown.fixedTotal;
   const currentFlexibleBudgetInTarget = Math.max(0, currentMonthlyBudgetInTarget - currentFixedBudgetInTarget);
@@ -217,6 +283,8 @@ export const App: React.FC = () => {
             fixedBudget={currentFixedBudgetInTarget}
             flexibleBudget={currentFlexibleBudgetInTarget}
             onGoToBudget={() => setActiveTab('budget')}
+            isAllView={selectedYearMonth === 'ALL'}
+            cumulativeBudgetInfo={cumulativeBudgetInfo}
           />
 
           {/* Tab Views */}
@@ -227,6 +295,9 @@ export const App: React.FC = () => {
                 breakdown={breakdown}
                 targetCurrency={targetCurrency}
                 monthlyBudget={currentMonthlyBudgetInTarget}
+                isAllView={selectedYearMonth === 'ALL'}
+                cumulativeBudgetInfo={cumulativeBudgetInfo}
+                onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
               />
 
               {/* Bottom View: Recent Transactions List */}
@@ -263,6 +334,9 @@ export const App: React.FC = () => {
               breakdown={breakdown}
               targetCurrency={targetCurrency}
               monthlyBudget={currentMonthlyBudgetInTarget}
+              isAllView={selectedYearMonth === 'ALL'}
+              cumulativeBudgetInfo={cumulativeBudgetInfo}
+              onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
             />
           )}
 
@@ -277,6 +351,11 @@ export const App: React.FC = () => {
               onMonthChange={setSelectedYearMonth}
               fixedTransactions={activeFixedExpenses}
               onStopFixedExpense={handleStopFixedExpense}
+              budgetStartMonth={budgetStartMonth}
+              onBudgetStartMonthChange={setBudgetStartMonth}
+              isAllView={selectedYearMonth === 'ALL'}
+              cumulativeBudgetInfo={cumulativeBudgetInfo}
+              onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
             />
           )}
         </div>
@@ -308,6 +387,13 @@ export const App: React.FC = () => {
         onSubmitBatch={handleBatchSubmit}
         editingTransaction={editingTx}
         onUpdateSingle={handleUpdateSingle}
+        onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
+      />
+
+      {/* Category Manager Modal */}
+      <CategoryManagerModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
       />
     </div>
   );

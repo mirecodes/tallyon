@@ -3,6 +3,7 @@
 :root {
   /* Surface & Background Colors */
   --bg-primary: #FFFFFF;
+  --bg-card: #FFFFFF;
   --bg-secondary: #F8FAFC;
   --bg-tertiary: #EFF6FF;
   --bg-dark: #0F172A;
@@ -241,6 +242,37 @@ button {
 .btn-danger-subtle:hover {
   color: var(--expense-rose);
   background-color: var(--expense-bg);
+}
+
+/* Unified clean white-background action icon buttons */
+.action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background-color: #FFFFFF;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.action-icon-btn:hover {
+  color: var(--primary-blue);
+  border-color: var(--primary-blue);
+  background-color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.action-icon-btn.btn-danger:hover {
+  color: var(--expense-rose);
+  border-color: var(--expense-rose);
+  background-color: #FFFFFF;
+  transform: translateY(-1px);
 }
 
 /* Timeline Layout Elements */

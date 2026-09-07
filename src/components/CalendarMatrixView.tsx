@@ -139,30 +139,39 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
           </div>
         </div>
 
-        {/* Matrix Grid with Weekly Total Column */}
+        {/* Matrix Grid with Separated Weekly Summary */}
         <div style={{ overflowX: 'auto' }}>
-          <div style={{ minWidth: 680 }}>
+          <div style={{ minWidth: 700 }}>
             {/* Weekdays Header */}
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(7, 1fr) 110px',
-                gap: 4,
-                marginBottom: 6,
+                gridTemplateColumns: 'repeat(7, 1fr) 120px',
+                gap: 6,
+                marginBottom: 8,
                 textAlign: 'center',
-                fontSize: '0.75rem',
+                fontSize: '0.6875rem',
                 fontWeight: 700,
-                color: 'var(--text-muted)',
+                letterSpacing: '0.04em',
               }}
             >
-              <div>SUN</div>
-              <div>MON</div>
-              <div>TUE</div>
-              <div>WED</div>
-              <div>THU</div>
-              <div>FRI</div>
-              <div>SAT</div>
-              <div style={{ color: 'var(--primary-blue)' }}>WEEKLY TOTAL</div>
+              <div style={{ color: '#E11D48', padding: '4px 0' }}>SUN</div>
+              <div style={{ color: 'var(--text-muted)', padding: '4px 0' }}>MON</div>
+              <div style={{ color: 'var(--text-muted)', padding: '4px 0' }}>TUE</div>
+              <div style={{ color: 'var(--text-muted)', padding: '4px 0' }}>WED</div>
+              <div style={{ color: 'var(--text-muted)', padding: '4px 0' }}>THU</div>
+              <div style={{ color: 'var(--text-muted)', padding: '4px 0' }}>FRI</div>
+              <div style={{ color: '#2563EB', padding: '4px 0' }}>SAT</div>
+              <div
+                style={{
+                  color: 'var(--text-secondary)',
+                  padding: '4px 0',
+                  borderLeft: '1px dashed var(--border-light)',
+                  paddingLeft: 4,
+                }}
+              >
+                WEEK TOTAL
+              </div>
             </div>
 
             {/* Weeks */}
@@ -181,21 +190,37 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                   key={wIdx}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(7, 1fr) 110px',
-                    gap: 4,
-                    marginBottom: 4,
+                    gridTemplateColumns: 'repeat(7, 1fr) 120px',
+                    gap: 6,
+                    marginBottom: 6,
                   }}
                 >
+                  {/* 7 Days of the Week */}
                   {week.map((cell, cIdx) => {
+                    const isSunday = cIdx === 0;
+                    const isSaturday = cIdx === 6;
+
+                    // Weekend subtle background tints
+                    const defaultDayBg = isSunday
+                      ? 'rgba(254, 226, 226, 0.4)' // soft red tint for Sunday
+                      : isSaturday
+                      ? 'rgba(219, 234, 254, 0.4)' // soft blue tint for Saturday
+                      : 'var(--bg-primary)';
+
                     if (!cell.dayNumber || !cell.dateStr) {
                       return (
                         <div
                           key={cIdx}
                           style={{
-                            height: 80,
-                            borderRadius: 8,
-                            backgroundColor: 'var(--bg-secondary)',
-                            opacity: 0.5,
+                            height: 76,
+                            borderRadius: 10,
+                            backgroundColor: isSunday
+                              ? 'rgba(254, 226, 226, 0.15)'
+                              : isSaturday
+                              ? 'rgba(219, 234, 254, 0.15)'
+                              : 'var(--bg-secondary)',
+                            opacity: 0.4,
+                            border: '1px dashed var(--border-light)',
                           }}
                         />
                       );
@@ -211,32 +236,42 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                         key={cIdx}
                         onClick={() => setSelectedDayData(dayData || { date: cell.dateStr!, totalAmount: 0, itemCount: 0, transactions: [] })}
                         style={{
-                          height: 80,
-                          borderRadius: 8,
+                          height: 76,
+                          borderRadius: 10,
                           border: isSelected
                             ? '2px solid var(--primary-blue)'
                             : isToday
-                            ? '1px solid var(--primary-blue-light)'
+                            ? '1.5px solid var(--primary-blue-light)'
+                            : isSunday
+                            ? '1px solid rgba(254, 202, 202, 0.8)'
+                            : isSaturday
+                            ? '1px solid rgba(191, 219, 254, 0.8)'
                             : '1px solid var(--border-light)',
                           backgroundColor: isSelected
                             ? 'var(--bg-tertiary)'
-                            : hasExpenses
-                            ? '#FFFFFF'
-                            : 'var(--bg-secondary)',
-                          padding: '6px 8px',
+                            : defaultDayBg,
+                          padding: '5px 6px',
                           display: 'flex',
                           flexDirection: 'column',
                           justifyContent: 'space-between',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
+                          boxShadow: isSelected ? 'var(--shadow-sm)' : 'none',
                         }}
                       >
+                        {/* Day Number Header */}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span
                             style={{
-                              fontSize: '0.8125rem',
-                              fontWeight: isToday ? 800 : 600,
-                              color: isToday ? 'var(--primary-blue)' : 'var(--text-primary)',
+                              fontSize: '0.75rem',
+                              fontWeight: isToday ? 800 : 700,
+                              color: isToday
+                                ? 'var(--primary-blue)'
+                                : isSunday
+                                ? '#E11D48'
+                                : isSaturday
+                                ? '#2563EB'
+                                : 'var(--text-primary)',
                             }}
                           >
                             {cell.dayNumber}
@@ -244,9 +279,13 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                           {hasExpenses && (
                             <span
                               style={{
-                                fontSize: '0.6875rem',
+                                fontSize: '0.625rem',
                                 color: 'var(--text-muted)',
-                                fontWeight: 600,
+                                fontWeight: 700,
+                                backgroundColor: 'var(--bg-secondary)',
+                                padding: '1px 4px',
+                                borderRadius: 4,
+                                border: '1px solid var(--border-light)',
                               }}
                             >
                               {dayData.itemCount}
@@ -254,56 +293,77 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                           )}
                         </div>
 
+                        {/* Expense Amount Pill (compact, tight font to prevent overflow/distortion) */}
                         {hasExpenses ? (
                           <div
                             className="tabular-nums"
                             style={{
-                              fontSize: '0.75rem',
+                              fontSize: '0.6875rem',
                               fontWeight: 700,
                               color: 'var(--expense-rose)',
-                              backgroundColor: 'var(--expense-bg)',
+                              backgroundColor: 'rgba(255, 228, 230, 0.85)',
                               borderRadius: 4,
-                              padding: '2px 4px',
+                              padding: '1px 3px',
                               textAlign: 'center',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
+                              letterSpacing: '-0.02em',
                             }}
+                            title={`${formatCurrency(dayData.totalAmount, targetCurrency)} (${dayData.itemCount} items)`}
                           >
                             -{formatCurrency(dayData.totalAmount, targetCurrency)}
                           </div>
                         ) : (
-                          <div style={{ height: 16 }} />
+                          <div style={{ height: 14 }} />
                         )}
                       </div>
                     );
                   })}
 
-                  {/* Weekly Total Column Cell */}
+                  {/* Distinct Separated Weekly Total Panel */}
                   <div
                     style={{
-                      height: 80,
-                      borderRadius: 8,
-                      backgroundColor: weekTotal > 0 ? 'var(--bg-tertiary)' : 'var(--bg-subtle)',
-                      border: '1px solid var(--border-light)',
-                      padding: '8px',
+                      height: 76,
+                      borderRadius: 10,
+                      backgroundColor: weekTotal > 0 ? 'var(--bg-secondary)' : 'transparent',
+                      borderLeft: '1px dashed var(--border-light)',
+                      borderRight: '1px solid var(--border-light)',
+                      borderTop: '1px solid var(--border-light)',
+                      borderBottom: '1px solid var(--border-light)',
+                      padding: '6px 8px',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'center',
-                      alignItems: 'center',
-                      textAlign: 'center',
+                      alignItems: 'flex-end',
+                      textAlign: 'right',
+                      marginLeft: 2,
                     }}
                   >
-                    <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>
+                    <div
+                      style={{
+                        fontSize: '0.625rem',
+                        fontWeight: 700,
+                        color: 'var(--text-muted)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
                       Week {wIdx + 1}
                     </div>
                     <div
                       className="tabular-nums"
                       style={{
-                        fontSize: '0.8125rem',
+                        fontSize: '0.75rem',
                         fontWeight: 800,
                         color: weekTotal > 0 ? 'var(--primary-blue)' : 'var(--text-muted)',
+                        marginTop: 2,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '100%',
                       }}
+                      title={formatCurrency(formattedWeekTotal, targetCurrency)}
                     >
                       {formatCurrency(formattedWeekTotal, targetCurrency)}
                     </div>
@@ -401,7 +461,7 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                       {formatCurrency(tx.convertedAmount, targetCurrency)}
                     </div>
                     <div className="tabular-nums" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      orig. {formatCurrency(tx.originalAmount, tx.originalCurrency)}
+                      {formatCurrency(tx.originalAmount, tx.originalCurrency)}
                     </div>
                   </div>
                 </div>

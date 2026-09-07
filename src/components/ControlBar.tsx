@@ -1,6 +1,7 @@
 import React from 'react';
 import type { TargetCurrency } from '../types';
 import { Coins, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { MonthPickerPopover } from './MonthPickerPopover';
 
 interface ControlBarProps {
   selectedYearMonth: string; // "YYYY-MM" or "ALL"
@@ -105,17 +106,45 @@ export const ControlBar: React.FC<ControlBarProps> = ({
           <ChevronLeft size={14} />
         </button>
 
-        <span
-          style={{
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            minWidth: 72,
-            textAlign: 'center',
-          }}
-        >
-          {monthLabel}
-        </span>
+        {/* Clickable Month Label with Floating MonthPickerPopover */}
+        {isAll ? (
+          <span
+            style={{
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              minWidth: 72,
+              textAlign: 'center',
+              padding: '2px 6px',
+            }}
+          >
+            {monthLabel}
+          </span>
+        ) : (
+          <MonthPickerPopover
+            value={selectedYearMonth}
+            onChange={(ym) => setSelectedYearMonth(ym)}
+            align="center"
+          >
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                minWidth: 72,
+                textAlign: 'center',
+                padding: '2px 8px',
+                borderRadius: '6px',
+                backgroundColor: 'var(--bg-secondary)',
+                cursor: 'pointer',
+                transition: 'background-color 0.15s ease',
+              }}
+              title="Click to select month"
+            >
+              {monthLabel}
+            </span>
+          </MonthPickerPopover>
+        )}
 
         <button
           type="button"

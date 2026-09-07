@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { CurrencyCode, ExpenseNature, Transaction } from '../types';
 import { X, Plus, Trash2, Copy, AlertCircle } from 'lucide-react';
 import { toLocalDateString } from '../utils/currency';
+import { useCategories } from '../utils/categories';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface ExpenseModalProps {
   onSubmitBatch: (items: Array<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<void>;
   editingTransaction?: Transaction | null;
   onUpdateSingle?: (id: string, updates: Partial<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<void>;
+  onOpenCategoryManager?: () => void;
 }
 
 interface FormRow {
@@ -22,19 +24,6 @@ interface FormRow {
   transactionTime: string;
 }
 
-const CATEGORY_OPTIONS = [
-  'Groceries',
-  'Food',
-  'Transport',
-  'Housing',
-  'Subscriptions',
-  'Education',
-  'Shopping',
-  'Health',
-  'Travel',
-  'Other',
-];
-
 const CURRENCIES: CurrencyCode[] = ['CHF', 'USD', 'EUR', 'KRW'];
 
 export const ExpenseModal: React.FC<ExpenseModalProps> = ({
@@ -43,7 +32,12 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   onSubmitBatch,
   editingTransaction,
   onUpdateSingle,
+  onOpenCategoryManager,
 }) => {
+  const { categories } = useCategories();
+  const categoryOptions = categories.map((c) => c.name);
+  const defaultCategory = categoryOptions[0] || 'Living';
+
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -56,7 +50,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     description: '',
     originalAmount: '',
     originalCurrency: 'CHF',
-    category: 'Groceries',
+    category: defaultCategory,
     expenseNature: 'ONE_OFF',
     isFixed: false,
     transactionDate: defaultDate,
@@ -138,7 +132,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
       if (!r.description.trim()) {
-        setErrorMsg(`Row ${i + 1}: Description cannot be empty.`);
+        setErrorMsg(`Row ${i + 1}: Title cannot be empty.`);
         return;
       }
       const amt = parseFloat(r.originalAmount);
@@ -265,7 +259,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: 6 }}>
-                  Item Description *
+                  Title *
                 </label>
                 <input
                   type="text"
@@ -281,7 +275,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: 6 }}>
-                    Original Amount *
+                    Amount *
                   </label>
                   <input
                     type="number"
@@ -310,27 +304,46 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 </div>
               </div>
 
-              {/* Category & Nature */}
+              {/* Category & Cycle */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: 6 }}>
-                    Category *
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+                      Category *
+                    </label>
+                    {onOpenCategoryManager && (
+                      <button
+                        type="button"
+                        onClick={onOpenCategoryManager}
+                        style={{
+                          fontSize: '0.6875rem',
+                          color: 'var(--primary-blue)',
+                          fontWeight: 600,
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                      >
+                        + Edit Categories
+                      </button>
+                    )}
+                  </div>
                   <select
                     value={rows[0].category}
                     onChange={(e) => handleRowChange(0, 'category', e.target.value)}
                     style={{ width: '100%' }}
                   >
-                    {CATEGORY_OPTIONS.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: 6 }}>
-                    Nature / Cycle *
+                    Cycle *
                   </label>
                   <select
                     value={rows[0].expenseNature}
@@ -338,9 +351,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     style={{ width: '100%' }}
                     disabled={rows[0].isFixed}
                   >
-                    <option value="ONE_OFF">One-off Expense</option>
-                    <option value="RECURRING_MONTHLY">Monthly Recurring</option>
-                    <option value="RECURRING_YEARLY">Yearly Recurring</option>
+                    <option value="ONE_OFF">One-off</option>
+                    <option value="RECURRING_MONTHLY">Monthly</option>
+                    <option value="RECURRING_YEARLY">Yearly</option>
                   </select>
                 </div>
               </div>
@@ -410,11 +423,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
                 <thead>
                   <tr style={{ backgroundColor: 'var(--bg-subtle)', textAlign: 'left' }}>
-                    <th style={{ padding: '8px 10px', width: '22%' }}>Description</th>
+                    <th style={{ padding: '8px 10px', width: '22%' }}>Title</th>
                     <th style={{ padding: '8px 10px', width: '13%' }}>Amount</th>
                     <th style={{ padding: '8px 10px', width: '11%' }}>Currency</th>
                     <th style={{ padding: '8px 10px', width: '16%' }}>Category</th>
-                    <th style={{ padding: '8px 10px', width: '14%' }}>Nature</th>
+                    <th style={{ padding: '8px 10px', width: '14%' }}>Cycle</th>
                     <th style={{ padding: '8px 10px', width: '8%', textAlign: 'center' }}>Fixed?</th>
                     <th style={{ padding: '8px 10px', width: '11%' }}>Date</th>
                     <th style={{ padding: '8px 10px', width: '5%', textAlign: 'center' }}>Actions</th>
@@ -427,7 +440,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                         <input
                           type="text"
                           value={row.description}
-                          placeholder="Description"
+                          placeholder="Title"
                           onChange={(e) => handleRowChange(idx, 'description', e.target.value)}
                           style={{ width: '100%', padding: '6px 8px' }}
                         />
@@ -461,9 +474,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                           onChange={(e) => handleRowChange(idx, 'category', e.target.value)}
                           style={{ width: '100%', padding: '6px 4px' }}
                         >
-                          {CATEGORY_OPTIONS.map((cat) => (
-                            <option key={cat} value={cat}>
-                              {cat}
+                          {categories.map((cat) => (
+                            <option key={cat.id} value={cat.name}>
+                              {cat.name}
                             </option>
                           ))}
                         </select>

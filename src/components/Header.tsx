@@ -53,49 +53,51 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* View Navigation Pill Tabs */}
-        <nav className="pill-tab-bar">
-          <button
-            type="button"
-            className={`pill-tab-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <PieChart size={14} /> Dashboard
-          </button>
-          <button
-            type="button"
-            className={`pill-tab-item ${activeTab === 'calendar' ? 'active' : ''}`}
-            onClick={() => setActiveTab('calendar')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <CalendarIcon size={14} /> Calendar
-          </button>
-          <button
-            type="button"
-            className={`pill-tab-item ${activeTab === 'transactions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('transactions')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <List size={14} /> Transactions
-          </button>
-          <button
-            type="button"
-            className={`pill-tab-item ${activeTab === 'analytics' ? 'active' : ''}`}
-            onClick={() => setActiveTab('analytics')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <PieChart size={14} /> Analytics
-          </button>
-          <button
-            type="button"
-            className={`pill-tab-item ${activeTab === 'budget' ? 'active' : ''}`}
-            onClick={() => setActiveTab('budget')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <Target size={14} /> Budget
-          </button>
-        </nav>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* View Navigation Pill Tabs */}
+          <nav className="pill-tab-bar">
+            <button
+              type="button"
+              className={`pill-tab-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+              onClick={() => setActiveTab('dashboard')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <PieChart size={14} /> Dashboard
+            </button>
+            <button
+              type="button"
+              className={`pill-tab-item ${activeTab === 'calendar' ? 'active' : ''}`}
+              onClick={() => setActiveTab('calendar')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <CalendarIcon size={14} /> Calendar
+            </button>
+            <button
+              type="button"
+              className={`pill-tab-item ${activeTab === 'transactions' ? 'active' : ''}`}
+              onClick={() => setActiveTab('transactions')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <List size={14} /> Transactions
+            </button>
+            <button
+              type="button"
+              className={`pill-tab-item ${activeTab === 'analytics' ? 'active' : ''}`}
+              onClick={() => setActiveTab('analytics')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <PieChart size={14} /> Analytics
+            </button>
+            <button
+              type="button"
+              className={`pill-tab-item ${activeTab === 'budget' ? 'active' : ''}`}
+              onClick={() => setActiveTab('budget')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <Target size={14} /> Budget
+            </button>
+          </nav>
+        </div>
       </div>
     </header>
   );

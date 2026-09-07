@@ -1,50 +1,16 @@
 import React from 'react';
-import type { AnalyticsBreakdown, TargetCurrency } from '../types';
+import type { AnalyticsBreakdown, TargetCurrency, CumulativeBudgetInfo } from '../types';
 import { formatCurrency } from '../utils/currency';
+import { useCategories, getCategoryColor } from '../utils/categories';
 
 interface BreakdownAnalyticsViewProps {
   breakdown: AnalyticsBreakdown;
   targetCurrency: TargetCurrency;
   monthlyBudget?: number;
+  isAllView?: boolean;
+  cumulativeBudgetInfo?: CumulativeBudgetInfo;
+  onOpenCategoryManager?: () => void;
 }
-
-// Rich, distinct color palette for all categories
-const CATEGORY_COLORS: Record<string, string> = {
-  Groceries: '#10B981', // Emerald
-  Food: '#F59E0B', // Amber
-  'Food & Dining': '#F59E0B',
-  Transport: '#3B82F6', // Blue
-  Housing: '#6366F1', // Indigo
-  'Housing & Utilities': '#6366F1',
-  Subscriptions: '#EC4899', // Pink
-  Education: '#8B5CF6', // Purple
-  'Education & Books': '#8B5CF6',
-  Shopping: '#F97316', // Orange
-  Health: '#14B8A6', // Teal
-  'Health & Personal': '#14B8A6',
-  Travel: '#06B6D4', // Cyan
-  'Leisure & Travel': '#06B6D4',
-  Other: '#64748B', // Slate
-};
-
-const EXTENDED_PALETTE = [
-  '#3B82F6', // Blue
-  '#10B981', // Emerald
-  '#F59E0B', // Amber
-  '#8B5CF6', // Purple
-  '#EC4899', // Pink
-  '#06B6D4', // Cyan
-  '#F97316', // Orange
-  '#6366F1', // Indigo
-  '#14B8A6', // Teal
-  '#E11D48', // Rose
-  '#84CC16', // Lime
-  '#64748B', // Slate
-];
-
-const getCategoryColor = (category: string, index: number): string => {
-  return CATEGORY_COLORS[category] || EXTENDED_PALETTE[index % EXTENDED_PALETTE.length];
-};
 
 const NATURE_CONFIG = {
   RECURRING_YEARLY: {
@@ -68,8 +34,12 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
   breakdown,
   targetCurrency,
   monthlyBudget: customBudget,
+  isAllView = false,
+  cumulativeBudgetInfo,
+  onOpenCategoryManager,
 }) => {
-  const totalBudget =
+  const { categories } = useCategories();
+  const defaultMonthlyBudget =
     customBudget && customBudget > 0
       ? customBudget
       : targetCurrency === 'CHF'
@@ -79,6 +49,10 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
       : targetCurrency === 'EUR'
       ? 2100
       : 3000000;
+
+  const totalBudget = isAllView && cumulativeBudgetInfo
+    ? cumulativeBudgetInfo.totalCumulativeBudget
+    : defaultMonthlyBudget;
 
   // Show all active categories with spending in the chart and legend
   const displayCategories = breakdown.byCategory.filter((item) => item.totalAmount > 0);
@@ -125,11 +99,38 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
     >
       {/* 1. Category Distribution Section with Enlarged Left/Right Chart & 2-Column Legend */}
       <div>
-        <div style={{ marginBottom: '1.25rem' }}>
-          <h3 style={{ fontSize: '1.125rem', margin: 0 }}>Category & Nature Breakdown</h3>
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 2 }}>
-            Categorical distribution across all items and nature commitments against monthly budget
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '1.25rem',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+          }}
+        >
+          <div>
+            <h3 style={{ fontSize: '1.125rem', margin: 0 }}>Category & Nature Breakdown</h3>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              Categorical distribution across all items and nature commitments against monthly budget
+            </div>
           </div>
+
+          {onOpenCategoryManager && (
+            <button
+              type="button"
+              onClick={onOpenCategoryManager}
+              className="btn-secondary"
+              style={{
+                fontSize: '0.75rem',
+                padding: '6px 12px',
+                borderRadius: '9999px',
+                fontWeight: 600,
+              }}
+            >
+              ⚙ Edit Categories
+            </button>
+          )}
         </div>
 
         {breakdown.grandTotal === 0 ? (
@@ -167,11 +168,11 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
               }}
             >
               <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-                {displayCategories.map((item, idx) => {
+                {displayCategories.map((item) => {
                   const strokeDasharray = `${(item.percentage / 100) * circumference} ${circumference}`;
                   const strokeDashoffset = -((cumulativePercent / 100) * circumference);
                   cumulativePercent += item.percentage;
-                  const color = getCategoryColor(item.category, idx);
+                  const color = getCategoryColor(item.category, categories);
 
                   return (
                     <circle
@@ -232,8 +233,8 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
                 rowGap: '0.625rem',
               }}
             >
-              {displayCategories.map((item, idx) => {
-                const color = getCategoryColor(item.category, idx);
+              {displayCategories.map((item) => {
+                const color = getCategoryColor(item.category, categories);
                 return (
                   <div
                     key={item.category}
@@ -312,15 +313,35 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
         >
           <div>
             <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Expense Nature vs Monthly Budget
+              {isAllView && cumulativeBudgetInfo
+                ? `Expense Nature vs Cumulative Budget (${cumulativeBudgetInfo.startYearMonth} ~ ${cumulativeBudgetInfo.currentYearMonth})`
+                : 'Expense Nature vs Monthly Budget'}
             </span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 8 }}>
               ({formatCurrency(totalNatureSpent, targetCurrency)} of {formatCurrency(totalBudget, targetCurrency)} budget used • {totalNatureBudgetPct}%)
             </span>
           </div>
+
+          {/* Over / Under badge in ALL mode */}
+          {isAllView && cumulativeBudgetInfo && (
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                padding: '3px 8px',
+                borderRadius: 6,
+                backgroundColor: cumulativeBudgetInfo.isOverBudget ? 'var(--expense-bg)' : 'var(--income-bg)',
+                color: cumulativeBudgetInfo.isOverBudget ? 'var(--expense-rose)' : 'var(--income-emerald)',
+              }}
+            >
+              {cumulativeBudgetInfo.isOverBudget
+                ? `Over by ${formatCurrency(Math.abs(cumulativeBudgetInfo.remainingOrOverAmount), targetCurrency)}`
+                : `Under by ${formatCurrency(cumulativeBudgetInfo.remainingOrOverAmount, targetCurrency)}`}
+            </span>
+          )}
         </div>
 
-        {/* Multi-Colored Stacked Progress Bar Against Monthly Budget: Yearly -> Monthly -> One-off (gradient from deep to light blue) */}
+        {/* Multi-Colored Stacked Progress Bar Against Budget: Yearly -> Monthly -> One-off (gradient from deep to light blue) */}
         <div
           style={{
             width: '100%',
@@ -364,116 +385,176 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
           />
         </div>
 
-        {/* Nature Breakdown Items Legend & Share: Yearly -> Monthly -> One-off */}
+        {/* Nature Breakdown Items Cards: Yearly -> Monthly -> One-off */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '0.75rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '0.875rem',
           }}
         >
-          {/* 1. Yearly Commitments (Darkest Blue) */}
+          {/* 1. Yearly Commitments */}
           <div
             style={{
-              padding: '10px 12px',
-              borderRadius: 8,
+              padding: '12px 14px 12px 12px',
+              borderRadius: 14,
               backgroundColor: 'var(--bg-secondary)',
-              borderLeft: `4px solid ${NATURE_CONFIG.RECURRING_YEARLY.color}`,
+              border: '1px solid var(--border-light)',
               display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
+              alignItems: 'center',
+              gap: 12,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                {NATURE_CONFIG.RECURRING_YEARLY.label}
-              </span>
-              <span
+            {/* Color Indicator Vertical Tape / Stripe */}
+            <div
+              style={{
+                width: 4,
+                height: 34,
+                borderRadius: 9999,
+                backgroundColor: NATURE_CONFIG.RECURRING_YEARLY.color,
+                flexShrink: 0,
+              }}
+            />
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  {NATURE_CONFIG.RECURRING_YEARLY.label}
+                </span>
+                <span
+                  className="tabular-nums"
+                  style={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    color: NATURE_CONFIG.RECURRING_YEARLY.color,
+                  }}
+                >
+                  {yearlyBudgetPct.toFixed(1)}%
+                </span>
+              </div>
+              <div
                 className="tabular-nums"
                 style={{
-                  fontSize: '0.6875rem',
-                  fontWeight: 700,
-                  color: NATURE_CONFIG.RECURRING_YEARLY.color,
+                  fontSize: '1.0625rem',
+                  fontWeight: 800,
+                  color: 'var(--text-primary)',
+                  marginTop: 1,
+                  letterSpacing: '-0.02em',
                 }}
               >
-                {yearlyBudgetPct.toFixed(1)}% of budget
-              </span>
-            </div>
-            <div
-              className="tabular-nums"
-              style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}
-            >
-              {formatCurrency(yearlyAmount, targetCurrency)}
+                {formatCurrency(yearlyAmount, targetCurrency)}
+              </div>
             </div>
           </div>
 
-          {/* 2. Monthly Commitments (Medium Blue) */}
+          {/* 2. Monthly Commitments */}
           <div
             style={{
-              padding: '10px 12px',
-              borderRadius: 8,
+              padding: '12px 14px 12px 12px',
+              borderRadius: 14,
               backgroundColor: 'var(--bg-secondary)',
-              borderLeft: `4px solid ${NATURE_CONFIG.RECURRING_MONTHLY.color}`,
+              border: '1px solid var(--border-light)',
               display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
+              alignItems: 'center',
+              gap: 12,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                {NATURE_CONFIG.RECURRING_MONTHLY.label}
-              </span>
-              <span
+            {/* Color Indicator Vertical Tape / Stripe */}
+            <div
+              style={{
+                width: 4,
+                height: 34,
+                borderRadius: 9999,
+                backgroundColor: NATURE_CONFIG.RECURRING_MONTHLY.color,
+                flexShrink: 0,
+              }}
+            />
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  {NATURE_CONFIG.RECURRING_MONTHLY.label}
+                </span>
+                <span
+                  className="tabular-nums"
+                  style={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    color: NATURE_CONFIG.RECURRING_MONTHLY.color,
+                  }}
+                >
+                  {monthlyBudgetPct.toFixed(1)}%
+                </span>
+              </div>
+              <div
                 className="tabular-nums"
                 style={{
-                  fontSize: '0.6875rem',
-                  fontWeight: 700,
-                  color: NATURE_CONFIG.RECURRING_MONTHLY.color,
+                  fontSize: '1.0625rem',
+                  fontWeight: 800,
+                  color: 'var(--text-primary)',
+                  marginTop: 1,
+                  letterSpacing: '-0.02em',
                 }}
               >
-                {monthlyBudgetPct.toFixed(1)}% of budget
-              </span>
-            </div>
-            <div
-              className="tabular-nums"
-              style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}
-            >
-              {formatCurrency(monthlyAmount, targetCurrency)}
+                {formatCurrency(monthlyAmount, targetCurrency)}
+              </div>
             </div>
           </div>
 
-          {/* 3. One-off Expenses (Lightest Blue) */}
+          {/* 3. One-off Expenses */}
           <div
             style={{
-              padding: '10px 12px',
-              borderRadius: 8,
+              padding: '12px 14px 12px 12px',
+              borderRadius: 14,
               backgroundColor: 'var(--bg-secondary)',
-              borderLeft: `4px solid ${NATURE_CONFIG.ONE_OFF.color}`,
+              border: '1px solid var(--border-light)',
               display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
+              alignItems: 'center',
+              gap: 12,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                {NATURE_CONFIG.ONE_OFF.label}
-              </span>
-              <span
+            {/* Color Indicator Vertical Tape / Stripe */}
+            <div
+              style={{
+                width: 4,
+                height: 34,
+                borderRadius: 9999,
+                backgroundColor: NATURE_CONFIG.ONE_OFF.color,
+                flexShrink: 0,
+              }}
+            />
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  {NATURE_CONFIG.ONE_OFF.label}
+                </span>
+                <span
+                  className="tabular-nums"
+                  style={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    color: '#2563EB',
+                  }}
+                >
+                  {oneOffBudgetPct.toFixed(1)}%
+                </span>
+              </div>
+              <div
                 className="tabular-nums"
                 style={{
-                  fontSize: '0.6875rem',
-                  fontWeight: 700,
-                  color: NATURE_CONFIG.ONE_OFF.color,
+                  fontSize: '1.0625rem',
+                  fontWeight: 800,
+                  color: 'var(--text-primary)',
+                  marginTop: 1,
+                  letterSpacing: '-0.02em',
                 }}
               >
-                {oneOffBudgetPct.toFixed(1)}% of budget
-              </span>
-            </div>
-            <div
-              className="tabular-nums"
-              style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}
-            >
-              {formatCurrency(oneOffAmount, targetCurrency)}
+                {formatCurrency(oneOffAmount, targetCurrency)}
+              </div>
             </div>
           </div>
         </div>
