@@ -1,168 +1,171 @@
-# Tallyon (탈리온) - Multi-Currency Expense Tracker
+# Tallyon - Multi-Currency Expense Tracker
 
-Tallyon은 스위스 프랑(CHF), 미국 달러(USD), 유로(EUR), 대한민국 원(KRW) 등 여러 통화로 지출이 발생하는 환경(해외 유학, 워킹 홀리데이, 다국가 출장 등)에 최적화된 **다중 통화 개인 재정 및 지출 추적 웹 애플리케이션**입니다.
+Tallyon is an intuitive, robust **multi-currency personal expense tracking and financial planning web application** designed for global citizens, international students, remote workers, and frequent travelers handling expenses in multiple currencies including Swiss Francs (**CHF**), US Dollars (**USD**), Euros (**EUR**), and South Korean Won (**KRW**).
 
-환율 변동이나 환산 오차로 인한 **원천 데이터 오염(Data Corruption)을 방지**하기 위해, 모든 지출은 원래 결제된 통화와 원본 금액으로 영구 보존되며, 화면 표기 시 실시간 환율을 반영하여 선택한 타겟 통화로 즉각 가치 환산(Valuation)됩니다.
-
----
-
-## 📑 목차
-1. [주요 핵심 가치 및 특징](#-주요-핵심-가치-및-특징)
-2. [전체 화면 구성 및 사용 방법](#-전체-화면-구성-및-사용-방법)
-3. [데이터 저장 형식 (Data Schema)](#-데이터-저장-형식-data-schema)
-4. [데이터 계산 및 처리 플로우 (Architecture Flow)](#-데이터-계산-및-처리-플로우-architecture-flow)
-5. [로컬 스토리지 키 명세](#-로컬-스토리지-키-명세)
-6. [개발 및 실행 가이드](#-개발-및-실행-가이드)
+To prevent **data corruption caused by exchange rate fluctuations or conversion rounding errors**, all transactions are perpetually recorded in their original currency and amount. Real-time dynamic valuation is computed strictly on the presentation layer, allowing seamless multi-currency aggregation without altering the raw underlying data.
 
 ---
 
-## 🌟 주요 핵심 가치 및 특징
-
-### 1. 무손실 원본 통화 보존 원칙 (Zero Distortion Principle)
-- 사용자가 입력한 `originalAmount`와 `originalCurrency`는 저장소에 영구적으로 변형 없이 기록됩니다.
-- 기준 통화 변경, 환율 변경에 따라 데이터를 덮어쓰지 않으며, **오직 프론트엔드 뷰 모델(`ValuatedTransaction`) 계층에서만 동적으로 가치를 환산**합니다.
-
-### 2. 표준 용어 인터페이스
-지출을 등록하거나 수정할 때 모호한 명칭 대신 표준화된 5대 핵심 필드를 사용합니다:
-- **`title`**: 지출 명칭 / 내용
-- **`amount`**: 지출 금액 (양수)
-- **`currency`**: 결제 통화 (`CHF`, `USD`, `EUR`, `KRW`)
-- **`category`**: 지출 분류
-- **`cycle`**: 지출 성격 (`One-off`, `Monthly`, `Yearly`) 및 고정 지출(`Recurring Fixed Expense`) 설정
-
-### 3. 영문 단일 11개 표준 카테고리 & 순서 재정렬
-- 카테고리는 별도의 한글 필드 없이 깔끔한 영문 이름으로 관리되며, 직관적인 아이콘과 전용 컬러 테마가 매칭됩니다:
-  - `Transport` (대중교통 / 버스 아이콘)
-  - `Living` (생활비 / 커피 아이콘)
-  - `Food` (식비 및 외식 / 식기 아이콘)
-  - `Subscriptions` (정기구독 / 반복 아이콘)
-  - `Administration` (행정 및 공공 / 관공서 아이콘)
-  - `Housing` (주거 및 월세 / 집 아이콘)
-  - `Health` (의료 및 건강 / 하트펄스 아이콘)
-  - `Education` (교육 및 강의 / 학사모 아이콘)
-  - `Shopping` (쇼핑 / 쇼핑백 아이콘)
-  - `Travel` (여행 / 비행기 아이콘)
-  - `Other` (기타 / 태그 아이콘)
-- **Budget** 탭 내 스트립 카드에서 `▲`, `▼` 버튼으로 사용자가 원하는 노출 순서를 언제든지 변경할 수 있으며, 모든 필터와 폼에 즉시 반영됩니다.
+## 📑 Table of Contents
+1. [Core Principles & Highlights](#-core-principles--highlights)
+2. [Interface Overview & User Guide](#-interface-overview--user-guide)
+3. [Data Storage Schema (TypeScript Entities)](#-data-storage-schema-typescript-entities)
+4. [Architecture & Valuation Flow](#-architecture--valuation-flow)
+5. [LocalStorage Key Specifications](#-localstorage-key-specifications)
+6. [Getting Started & Development](#-getting-started--development)
 
 ---
 
-## 🖥️ 전체 화면 구성 및 사용 방법
+## 🌟 Core Principles & Highlights
 
-### 1. 상단 컨트롤 바 (Global Control Bar)
-- **월 탐색기 (`Month Navigator`)**:
-  - `◀`, `▶`: 이전 달 / 다음 달로 이동
-  - `This Month`: 현재 진행 중인 이번 달로 원클릭 복귀
-  - `월 선택 버튼`: 클릭 시 팝오버 달력(Month Picker)이 열려 원하는 연/월로 즉시 점프
-  - `ALL`: 전체 기간 모드로 전환 (누적 지출 및 기간 통합 통계 조회)
-- **타겟 통화 선택기 (`Target Currency`)**:
-  - `CHF`, `USD`, `EUR`, `KRW` 버튼을 통해 화면에 표시될 기준 화폐를 즉시 변경 (전체 지출, 예산, 차트가 해당 화폐로 재평가됨).
+### 1. Zero Distortion Principle (Lossless Currency Storage)
+- Every transaction persistently records `originalAmount` and `originalCurrency`.
+- Changing target currencies or updating daily exchange rates never alters or overwrites the recorded transactions.
+- Valuation is performed dynamically by converting original amounts into the active view target currency through client-side valuation models (`ValuatedTransaction`).
 
-### 2. 탭별 상세 기능
+### 2. Standardized 5-Field Interface
+Transaction entry and modification modal dialogues adhere to a clean, unambiguous terminology:
+- **`title`**: Expense description / narrative.
+- **`amount`**: Numerical cost in original tender (positive float).
+- **`currency`**: Original tender code (`CHF`, `USD`, `EUR`, `KRW`).
+- **`category`**: Semantic classification.
+- **`cycle`**: Expense nature (`One-off`, `Monthly`, `Yearly`) and recurring fixed expense toggle.
 
-#### ① Transactions (거래 내역)
-- **검색 및 다중 필터**: 검색어, 카테고리 칩, 지출 주기(`One-off`, `Monthly`, `Yearly`)로 필터링.
-- **다양한 정렬 (3단 가로줄 알약 버튼)**:
-  - 알파벳순 (A-Z / Z-A)
-  - 날짜순 (최신순 / 오래된순)
-  - 금액순 (높은순 / 낮은순)
-- **페이지네이션**: 페이지당 5 / 10 / 15 / 20개 보기 선택 및 이전/다음 페이지 내비게이션.
-- **화이트 배경 액션 버튼**:
-  - `연필 버튼`: 지출 내역 수정 모달 오픈
-  - `휴지통 버튼`: 지출 내역 삭제
-- **금액 표기**: 상단에는 타겟 통화로 환산된 금액, 하단에는 **원본 통화 금액(예: `€15.00`, `₩15,000`)**이 깔끔하게 바로 표기됩니다.
-
-#### ② Dashboard & Analytics (대시보드 및 분석)
-- **Total Expenditure 카드**: 당월/전체 누적 지출액과 예산 대비 사용률(%) 한눈에 파악.
-- **Fixed vs Flexible 지출 분류 카드**:
-  - `Fixed Expenses`: 정기 고정 지출 (월세, 교통패스, 정기구독 등)
-  - `Flexible Expenses`: 생활 변동 지출 (식비, 쇼핑, 문화 등)
-  - `Yearly Commitments`: 연간 지출의 월할 환산액
-- **카테고리별 / 주기별 비중 분석**: 도넛 차트 및 프로그레스 바를 통한 시각화.
-
-#### ③ Budget (예산 관리 및 고정 지출)
-- **Target Budget 설정**:
-  - `Monthly Base Budget`: 월 정기 기본 예산
-  - `Extra Budget Adjustment (+/-)`: 당월 특별 추가/차감 예산
-- **Category Settings & Order 스트립**:
-  - 정렬된 카테고리 뱃지 미리보기 및 클릭 시 카테고리 편집/순서 변경 모달 오픈.
-- **Active Fixed Expenses (고정 지출 관리)**:
-  - 상단에 `Total Expenditure`와 동일한 2.25rem 볼드 블루 폰트의 **`TOTAL FIXED`** 총액 표시.
-  - 매달 자동 반영되는 고정 지출 목록을 조회하고, 특정 항목 삭제 시 당월 및 향후 미래 월에서 자동으로 고정 지출 제외.
-
-#### ④ Calendar (달력 매트릭스 뷰)
-- **월간 캘린더 매트릭스**: 날짜별 총 지출액과 지출 건수를 한눈에 확인.
-- **주말 색상 틴트**:
-  - 일요일(SUN): 은은한 소프트 레드 배경 틴트 및 로즈 텍스트
-  - 토요일(SAT): 은은한 소프트 블루 배경 틴트 및 로열 블루 텍스트
-- **독립형 `WEEK TOTAL` 사이드 패널**: 달력 셀과 헷갈리지 않도록 점선으로 분리된 우측 전용 패널에서 주차별 총 지출액 집계.
-- **일자 클릭 시 상세 팝업**: 해당 날짜의 지출 건별 원본 금액과 환산 금액 상세 확인.
-
-#### ⑤ 지출 등록/수정 모달 (Floating Pencil Button)
-- 우측 하단 플로팅 연필 버튼 클릭 시 오픈.
-- **Single (단건 등록)** 및 **Batch (다건 일괄 등록)** 탭 지원.
-- `Recurring Fixed Expense` 토글 활성화 시 매월 자동으로 반영되는 고정 지출로 지정.
+### 3. Pure English Canonical Categories & Custom Reordering
+- Eliminates bilingual clutter by adopting pure English category names.
+- 11 canonical categories mapped to purpose-crafted icons and harmonious color accents:
+  - `Transport` (Transit / Bus icon)
+  - `Living` (Lifestyle & Daily / Coffee icon)
+  - `Food` (Dining & Groceries / Utensils icon)
+  - `Subscriptions` (Recurring Services / Repeat icon)
+  - `Administration` (Legal & Public Services / Landmark icon)
+  - `Housing` (Rent & Home / Home icon)
+  - `Health` (Medical & Fitness / HeartPulse icon)
+  - `Education` (Tuition & Books / GraduationCap icon)
+  - `Shopping` (Retail & Goods / ShoppingBag icon)
+  - `Travel` (Flights & Lodging / Plane icon)
+  - `Other` (Miscellaneous / Tag icon)
+- Accessible via the **Budget** tab strip card banner, allowing users to reorder items (`▲`, `▼`), customize color schemes, and synchronize order across all views and filters.
 
 ---
 
-## 💾 데이터 저장 형식 (Data Schema)
+## 🖥️ Interface Overview & User Guide
 
-모든 데이터는 TypeScript 인터페이스로 엄격하게 정의되어 관리됩니다.
+### 1. Global Navigation & Control Bar
+- **Month Navigator**:
+  - `◀`, `▶`: Step backward or forward month-by-month.
+  - `This Month`: Instantly jump to the current calendar month.
+  - `Month Picker Popover`: Click the active month pill to trigger a calendar matrix popup for fast multi-year navigation.
+  - `ALL`: Switch to cumulative all-time overview mode to assess aggregate budgets and multi-month expenditures.
+- **Target Currency Selector**:
+  - Switch between `CHF`, `USD`, `EUR`, and `KRW` with a single click. All summary metrics, list amounts, and charts recalculate instantly.
 
-### 1. `Transaction` (지출 엔티티)
+### 2. Tab Views
+
+#### ① Transactions
+- **Real-Time Search & Multi-Filters**: Filter by text search, custom-ordered category chips, and expense cycles (`One-off`, `Monthly`, `Yearly`).
+- **Sorting Popover (Triple Horizontal Bar Pill)**:
+  - Alphabetical (`A → Z` / `Z → A`)
+  - Chronological (`Newest first` / `Oldest first`)
+  - Amount (`Highest first` / `Lowest first`)
+- **Pagination Navigation**: Select `5`, `10`, `15`, or `20` records per page with intuitive page navigation.
+- **Clean White Action Buttons**:
+  - `Pencil icon`: Edit transaction details.
+  - `Trash icon`: Delete transaction.
+- **Direct Currency Display**: Displays converted amount in target currency alongside the raw original currency amount (e.g. `€15.00`, `₩15,000`) without redundant labels.
+
+#### ② Dashboard & Analytics
+- **Total Expenditure KPI**: Visualizes current/cumulative spending against active budgets with real-time percentage indicators.
+- **Tri-Partite Expense Breakdown**:
+  - `Fixed Expenses`: Regular monthly commitments (rent, transit pass, gym).
+  - `Flexible Expenses`: Variable discretionary spending (dining, shopping, leisure).
+  - `Yearly Commitments`: Annual expenses amortized to a monthly equivalent.
+- **Category & Frequency Distributions**: Visual breakdown with interactive donut charts and progress meters.
+
+#### ③ Budget
+- **Target Monthly Budget**:
+  - `Monthly Base Budget`: Recurring baseline monthly threshold.
+  - `Extra Budget Adjustment (+/-)`: Temporary monthly adjustments.
+- **Category Settings & Order Strip**:
+  - Direct preview of current category sequence; click anywhere on the strip card to open the category manager modal.
+- **Active Fixed Expenses Management**:
+  - Prominent left-aligned **`TOTAL FIXED`** metric styled in 2.25rem bold blue, matching the Total Expenditure visual hierarchy.
+  - Visual category color tape accents, round icons, and unified trash icon buttons to remove a commitment starting from the active month onward.
+
+#### ④ Calendar Matrix View
+- **Monthly Grid**: Daily expenditure totals and transaction count indicators.
+- **Soft Weekend Tints**:
+  - Sunday (`SUN`): Subtle soft-red tint (`rgba(254, 226, 226, 0.4)`) with rose headers.
+  - Saturday (`SAT`): Subtle soft-blue tint (`rgba(219, 234, 254, 0.4)`) with royal blue headers.
+- **Standalone `WEEK TOTAL` Side Panel**:
+  - Distinctly separated via a dashed divider on the right to avoid confusing weekly aggregates with calendar days.
+- **Daily Inspector Popup**: Click any cell to inspect itemized transactions with original and converted valuations.
+
+#### ⑤ Floating Add Expense Modal
+- Triggered by the persistent floating pencil button in the lower-right corner.
+- Offers **Single Entry** and **Batch Entry** tabs for rapid expense input.
+- Toggle **Recurring Fixed Expense** to automatically project the transaction into future months.
+
+---
+
+## 💾 Data Storage Schema (TypeScript Entities)
+
+All models are strictly defined in TypeScript contracts:
+
+### 1. `Transaction` Entity
 ```typescript
 export interface Transaction {
-  id: string;                     // UUIDv7 고유 식별자 (시간순 정렬 가능)
-  description: string;            // 지출 명칭 (title)
-  transactionTime: string;        // ISO-8601 UTC 문자열 (예: "2026-09-07T18:30:00.000Z")
-  originalAmount: number;         // 사용자가 결제한 원본 금액 (positive float)
-  originalCurrency: CurrencyCode; // 원본 통화 ('CHF' | 'USD' | 'EUR' | 'KRW')
-  category: string;               // 카테고리 영문명 (예: 'Food', 'Transport')
+  id: string;                     // UUIDv7 unique identifier (time-sortable)
+  description: string;            // Item narrative (title)
+  transactionTime: string;        // ISO-8601 UTC timestamp (e.g., "2026-09-07T18:30:00.000Z")
+  originalAmount: number;         // Positive numerical cost
+  originalCurrency: CurrencyCode; // Tender code ('CHF' | 'USD' | 'EUR' | 'KRW')
+  category: string;               // Category name (e.g., 'Food', 'Transport')
   expenseNature: ExpenseNature;   // 'ONE_OFF' | 'RECURRING_MONTHLY' | 'RECURRING_YEARLY'
-  isFixed?: boolean;              // 고정 지출 여부 (true 시 차기 월 자동 반영)
-  isAutoGenerated?: boolean;      // 과거 고정 지출로부터 동적으로 투영된 항목인지 여부
-  parentFixedId?: string;         // 투영 원본 트랜잭션 ID
-  stoppedAfterMonth?: string;     // 고정 지출 중단 시점 (YYYY-MM)
-  createdAt: string;              // ISO-8601 생성 일시
-  updatedAt: string;              // ISO-8601 수정 일시
+  isFixed?: boolean;              // True if item is a fixed commitment propagating into future months
+  isAutoGenerated?: boolean;      // True if projected from an earlier fixed expense
+  parentFixedId?: string;         // Originating transaction ID for recurring projections
+  stoppedAfterMonth?: string;     // YYYY-MM boundary after which recurring projection ceases
+  createdAt: string;              // ISO-8601 creation timestamp
+  updatedAt: string;              // ISO-8601 update timestamp
 }
 ```
 
-### 2. `MonthlyBudget` (월별 예산 엔티티)
+### 2. `MonthlyBudget` Entity
 ```typescript
 export interface MonthlyBudget {
-  yearMonth: string;              // YYYY-MM (예: "2026-09")
-  baseBudget: number;             // 기본 월 예산
-  extraBudget: number;            // 추가/차감 예산 (+ / -)
-  totalBudget: number;            // 최종 예산 = baseBudget + extraBudget
-  currency: CurrencyCode;         // 예산 설정 기준 통화
-  updatedAt: string;              // 수정 일시
+  yearMonth: string;              // Target month in YYYY-MM format (e.g., "2026-09")
+  baseBudget: number;             // Standard recurring monthly baseline
+  extraBudget: number;            // Adjustment budget delta (+ / -)
+  totalBudget: number;            // Computed budget = baseBudget + extraBudget
+  currency: CurrencyCode;         // Base currency of budget declaration
+  updatedAt: string;              // ISO-8601 update timestamp
 }
 ```
 
-### 3. `CategoryDefinition` (카테고리 정의 엔티티)
+### 3. `CategoryDefinition` Entity
 ```typescript
 export interface CategoryDefinition {
-  id: string;                     // 카테고리 식별 키 (영문, 예: 'Transport')
-  name: string;                   // 영문 표시 이름 (예: 'Transport')
-  color: string;                  // 전용 헥사 색상 코드 (예: '#3B82F6')
-  bgColor: string;                // 뱃지용 은은한 배경색 틴트 (예: '#EFF6FF')
+  id: string;                     // Category key identifier (e.g., 'Transport')
+  name: string;                   // Display name in English
+  color: string;                  // Distinct hex color code (e.g., '#3B82F6')
+  bgColor: string;                // Subtle background tint for pill badges (e.g., '#EFF6FF')
 }
 ```
 
-### 4. `ExchangeRateRecord` (일별 환율 엔티티)
+### 4. `ExchangeRateRecord` Entity
 ```typescript
 export interface ExchangeRateRecord {
   date: string;                       // YYYY-MM-DD
-  baseCurrency: 'KRW';                // 고정 기준 통화 (원화)
-  rates: Record<CurrencyCode, number>;// 1 외화당 원화 환산 가치 (예: { CHF: 1560.5, USD: 1385.0, EUR: 1502.0, KRW: 1.0 })
+  baseCurrency: 'KRW';                // Fixed reference anchor currency
+  rates: Record<CurrencyCode, number>;// KRW value per 1 unit of foreign currency (e.g., { CHF: 1560.5, USD: 1385.0, EUR: 1502.0, KRW: 1.0 })
   updatedAt: string;
 }
 ```
 
 ---
 
-## 🔄 데이터 계산 및 처리 플로우 (Architecture Flow)
+## 🔄 Architecture & Valuation Flow
 
 ```mermaid
 flowchart TD
@@ -174,71 +177,72 @@ flowchart TD
     end
 
     subgraph Valuation [Valuation Engine]
-        A -->|Raw Transactions: originalAmount & originalCurrency| E[Valuation Hook / Engine]
+        A -->|Raw Transactions: originalAmount & originalCurrency| E[Valuation Engine / Hook]
         B -->|Daily Exchange Rates| E
         Target[Selected Target Currency: KRW/CHF/USD/EUR] --> E
         
-        E -->|Formula: (Amount * Rate_orig) / Rate_target| F[ValuatedTransaction View Model]
+        E -->|Formula: Amount * Rate_orig / Rate_target| F[ValuatedTransaction View Model]
     end
 
     subgraph Presentation [UI Views]
         F --> G[Transactions View: Sorting & Pagination]
-        F --> H[Dashboard & Analytics: Category & Nature Breakdown]
+        F --> H[Dashboard & Analytics: Visual Breakdowns]
         F --> I[Calendar Matrix: Daily Totals & Week Total Panel]
         C --> J[Budget View: Target Budget vs Actual Spent]
         F --> J
-        D -->|Order & Colors| G
-        D -->|Order & Colors| J
+        D -->|Sequence & Color Metadata| G
+        D -->|Sequence & Color Metadata| J
     end
 ```
 
-### 환산 가치 계산 공식 (Valuation Formula)
-모든 환율 데이터는 원화(`KRW`)를 기저(`baseCurrency: 'KRW'`)로 1 외화당 원화 금액을 저장합니다:
-$$\text{KRW Amount} = \text{originalAmount} \times \text{rates}[\text{originalCurrency}]$$
-$$\text{convertedAmount} = \frac{\text{KRW Amount}}{\text{rates}[\text{targetCurrency}]}$$
+### Dynamic Valuation Formula
+Exchange rates use South Korean Won (`KRW`) as the intermediate anchor currency (`baseCurrency: 'KRW'`):
+$$\text{Amount}_{\text{KRW}} = \text{originalAmount} \times \text{rates}[\text{originalCurrency}]$$
+$$\text{convertedAmount} = \frac{\text{Amount}_{\text{KRW}}}{\text{rates}[\text{targetCurrency}]}$$
 
-- 동일 통화 간 변환 시(`originalCurrency === targetCurrency`) 환율 계산 없이 정확히 `originalAmount`를 유지합니다.
-- 부동소수점 오차 방지를 위해 `safeAdd` 및 화폐별 소수점 포맷터(`formatCurrency`)를 거쳐 렌더링됩니다.
+- When `originalCurrency === targetCurrency`, no conversion rate is applied, preserving the exact numerical amount.
+- Floating-point discrepancies are safeguarded via `safeAdd` and currency-specific formatting (`formatCurrency`).
 
 ---
 
-## 🔑 로컬 스토리지 키 명세
+## 🔑 LocalStorage Key Specifications
 
-| 키 이름 | 내용 | 설명 |
+| Key | Schema Description | Purpose |
 | :--- | :--- | :--- |
-| `@app/transactions` | 지출 원천 데이터 목록 | 사용자가 입력한 모든 지출의 무손실 원본 JSON 배열 |
-| `@app/budgets` | 월별 예산 맵 | `{ [YYYY-MM]: MonthlyBudget }` 형태의 예산 설정 맵 |
-| `@app/custom_categories_v1` | 사용자 카테고리 정의 및 순서 | 사용자가 정의하거나 순서를 조정한 카테고리 객체 배열 |
-| `@app/exchange_rates` | 일자별 환율 데이터 맵 | `{ [YYYY-MM-DD]: ExchangeRateRecord }` 환율 기록 |
+| `@app/transactions` | `Transaction[]` | Raw, immutable record of all user expense entries |
+| `@app/budgets` | `Record<string, MonthlyBudget>` | Keyed by `YYYY-MM` storing user budget allocations |
+| `@app/custom_categories_v1` | `CategoryDefinition[]` | User-defined category sequencing and styling |
+| `@app/exchange_rates` | `Record<string, ExchangeRateRecord>` | Keyed by `YYYY-MM-DD` historical exchange rates |
 
 ---
 
-## 🚀 개발 및 실행 가이드
+## 🚀 Getting Started & Development
 
-### 요구 사항
-- Node.js 18+ 이상
-- npm 또는 yarn / pnpm
+### Prerequisites
+- Node.js 18.0 or higher
+- npm, yarn, or pnpm
 
-### 설치 및 로컬 실행
+### Installation & Local Run
 ```bash
-# 저장소 클론
+# Clone repository
 git clone <repository-url>
 cd tallyon
 
-# 의존성 패키지 설치
+# Install dependencies
 npm install
 
-# 개발 서버 실행
+# Start development server
 npm run dev
 ```
 
-### 프로덕션 빌드 및 타입 검사
+### Production Build & Linting
 ```bash
-# TypeScript 컴파일 및 Vite 번들링
+# TypeScript verification & Vite production bundling
 npm run build
 
-# 코드 린트 검사
+# Run code linter
 npm run lint
 ```
+
 ---
-**Tallyon** • Multi-Currency Expense Tracker with Modern React 19, TypeScript & Clean Repository Architecture.
+**Tallyon** • Modern Multi-Currency Expense Tracker built with React 19, TypeScript, and Repository Architecture.
