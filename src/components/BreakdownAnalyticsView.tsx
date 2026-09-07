@@ -11,14 +11,19 @@ interface BreakdownAnalyticsViewProps {
 // Rich, distinct color palette for all categories
 const CATEGORY_COLORS: Record<string, string> = {
   Groceries: '#10B981', // Emerald
-  'Food & Dining': '#F59E0B', // Amber
+  Food: '#F59E0B', // Amber
+  'Food & Dining': '#F59E0B',
   Transport: '#3B82F6', // Blue
-  'Housing & Utilities': '#6366F1', // Indigo
+  Housing: '#6366F1', // Indigo
+  'Housing & Utilities': '#6366F1',
   Subscriptions: '#EC4899', // Pink
-  'Education & Books': '#8B5CF6', // Purple
+  Education: '#8B5CF6', // Purple
+  'Education & Books': '#8B5CF6',
   Shopping: '#F97316', // Orange
-  'Health & Personal': '#14B8A6', // Teal
-  'Leisure & Travel': '#06B6D4', // Cyan
+  Health: '#14B8A6', // Teal
+  'Health & Personal': '#14B8A6',
+  Travel: '#06B6D4', // Cyan
+  'Leisure & Travel': '#06B6D4',
   Other: '#64748B', // Slate
 };
 
