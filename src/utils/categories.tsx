@@ -44,7 +44,7 @@ const STORAGE_KEY = '@app/custom_categories_v1';
 
 /**
  * Get the current categories from LocalStorage, or fallback to DEFAULT_CATEGORIES.
- * Also gracefully appends any newly introduced standard categories (like Education) if not present.
+ * Also cleanses obsolete/legacy categories (e.g. "Groceries" -> "Food") and ensures canonical categories exist.
  */
 export function getSavedCategories(): CategoryDefinition[] {
   try {
@@ -52,20 +52,38 @@ export function getSavedCategories(): CategoryDefinition[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Ensure canonical categories (e.g. newly added Education) exist
-        const hasEducation = parsed.some((c: CategoryDefinition) => c.id.toLowerCase() === 'education');
-        if (!hasEducation) {
-          const educationDef = DEFAULT_CATEGORIES.find((c) => c.id === 'Education')!;
-          // Insert Education before Other if Other exists, else push
-          const otherIdx = parsed.findIndex((c: CategoryDefinition) => c.id.toLowerCase() === 'other');
-          if (otherIdx !== -1) {
-            parsed.splice(otherIdx, 0, educationDef);
-          } else {
-            parsed.push(educationDef);
+        // Cleanse legacy category names like "Groceries" -> "Food"
+        let migrated = parsed.map((c: CategoryDefinition) => {
+          if (c.id?.toLowerCase() === 'groceries' || c.name?.toLowerCase() === 'groceries') {
+            return { id: 'Food', name: 'Food', color: '#F59E0B', bgColor: '#FFFBEB' };
           }
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+          return c;
+        });
+
+        // Deduplicate by ID
+        const seen = new Set<string>();
+        migrated = migrated.filter((c) => {
+          const key = c.id.toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        // Ensure canonical categories exist
+        for (const canonical of DEFAULT_CATEGORIES) {
+          if (!seen.has(canonical.id.toLowerCase())) {
+            const otherIdx = migrated.findIndex((c) => c.id.toLowerCase() === 'other');
+            if (otherIdx !== -1) {
+              migrated.splice(otherIdx, 0, canonical);
+            } else {
+              migrated.push(canonical);
+            }
+            seen.add(canonical.id.toLowerCase());
+          }
         }
-        return parsed;
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        return migrated;
       }
     }
   } catch (err) {
