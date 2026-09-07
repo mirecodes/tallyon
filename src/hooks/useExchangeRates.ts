@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { Transaction, ExchangeRateRecord, IExchangeRateRepository } from '../types';
-import { LocalStorageExchangeRateRepository } from '../repositories/LocalStorageExchangeRateRepository';
+import { SupabaseExchangeRateRepository } from '../repositories/SupabaseExchangeRateRepository';
 import { fetchExchangeRateForDate } from '../services/exchangeRateService';
 import { toLocalDateString } from '../utils/currency';
 
 export function useExchangeRates(transactions: Transaction[], repo?: IExchangeRateRepository) {
-  const repository = useMemo(() => repo || new LocalStorageExchangeRateRepository(), [repo]);
+  const repository = useMemo(() => repo || new SupabaseExchangeRateRepository(), [repo]);
   const [ratesMap, setRatesMap] = useState<Record<string, ExchangeRateRecord>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
 

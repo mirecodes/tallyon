@@ -105,3 +105,49 @@ export interface IBudgetRepository {
   getAllBudgets(): Promise<Record<string, MonthlyBudget>>;
   saveBudget(budget: MonthlyBudget): Promise<void>;
 }
+
+// 8. Supabase Database Snake-Case Row Schemas
+export interface DbTransaction {
+  id: string;
+  user_id: string;
+  description: string;
+  transaction_time: string;
+  original_amount: number;
+  original_currency: CurrencyCode;
+  category: string;
+  expense_nature: ExpenseNature;
+  is_fixed: boolean;
+  is_auto_generated: boolean;
+  parent_fixed_id: string | null;
+  stopped_after_month: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbMonthlyBudget {
+  id?: string;
+  user_id: string;
+  year_month: string;
+  base_budget: number;
+  extra_budget: number;
+  currency: CurrencyCode;
+  updated_at: string;
+}
+
+export interface DbUserCategory {
+  id?: string;
+  user_id: string;
+  category_id: string;
+  name: string;
+  color: string;
+  bg_color: string;
+  sort_order: number;
+  updated_at: string;
+}
+
+export interface DbExchangeRate {
+  rate_date: string;
+  base_currency: 'KRW';
+  rates: Record<CurrencyCode, number>;
+  updated_at: string;
+}

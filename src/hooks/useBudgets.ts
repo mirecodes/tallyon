@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { MonthlyBudget, IBudgetRepository } from '../types';
-import { LocalStorageBudgetRepository } from '../repositories/LocalStorageBudgetRepository';
+import { SupabaseBudgetRepository } from '../repositories/SupabaseBudgetRepository';
 
 const START_MONTH_STORAGE_KEY = '@app/budget_start_month';
 
 export function useBudgets(repo?: IBudgetRepository) {
-  const repository = useMemo(() => repo || new LocalStorageBudgetRepository(), [repo]);
+  const repository = useMemo(() => repo || new SupabaseBudgetRepository(), [repo]);
   const [budgetsMap, setBudgetsMap] = useState<Record<string, MonthlyBudget>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
 

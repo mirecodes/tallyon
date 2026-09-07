@@ -1,5 +1,6 @@
 import React from 'react';
-import { Wallet, Calendar as CalendarIcon, List, PieChart, Target } from 'lucide-react';
+import { Wallet, Calendar as CalendarIcon, List, PieChart, Target, Cloud, CloudOff } from 'lucide-react';
+import { isSupabaseConfigured } from '../services/supabase';
 
 interface HeaderProps {
   activeTab: 'dashboard' | 'calendar' | 'transactions' | 'analytics' | 'budget';
@@ -32,7 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
         }}
       >
         {/* Brand Logo & Name (Minimal & Clean) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div
             style={{
               width: 32,
@@ -51,6 +52,26 @@ export const Header: React.FC<HeaderProps> = ({
           <div style={{ fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.03em', lineHeight: 1 }}>
             Tally<span style={{ color: 'var(--primary-blue)' }}>on</span>
           </div>
+
+          {/* Cloud Sync Status Indicator */}
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              fontSize: '0.6875rem',
+              fontWeight: 700,
+              padding: '2px 8px',
+              borderRadius: '9999px',
+              backgroundColor: isSupabaseConfigured ? 'var(--income-bg)' : 'var(--bg-secondary)',
+              color: isSupabaseConfigured ? 'var(--income-emerald)' : 'var(--text-muted)',
+              border: '1px solid var(--border-light)',
+            }}
+            title={isSupabaseConfigured ? 'Connected to Supabase Cloud' : 'Running in Local Storage Mode (Add VITE_SUPABASE_URL to connect)'}
+          >
+            {isSupabaseConfigured ? <Cloud size={11} /> : <CloudOff size={11} />}
+            <span>{isSupabaseConfigured ? 'Cloud Sync' : 'Local'}</span>
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
