@@ -15,7 +15,7 @@ import { ExpenseModal } from './components/ExpenseModal';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'transactions' | 'analytics'>('dashboard');
-  const [targetCurrency, setTargetCurrency] = useState<TargetCurrency>('CHF');
+  const [targetCurrency, setTargetCurrency] = useState<TargetCurrency>('KRW');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
