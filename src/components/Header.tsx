@@ -1,5 +1,5 @@
-import React from 'react';
-import { Wallet, Calendar as CalendarIcon, List, PieChart, Target, Cloud, CloudOff, LogOut, User as UserIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Wallet, Calendar as CalendarIcon, List, PieChart, Target, Cloud, CloudOff, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
 import { isSupabaseConfigured, useSupabaseUser, signInWithGoogle, signOutUser } from '../services/supabase';
 
 interface HeaderProps {
@@ -12,10 +12,25 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
 }) => {
   const { user, isLoading } = useSupabaseUser();
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const isAnonymous = user?.is_anonymous ?? true;
   const userEmail = user?.email;
   const userAvatar = user?.user_metadata?.avatar_url;
   const userName = user?.user_metadata?.full_name || userEmail?.split('@')[0];
+
+  const navItems: Array<{
+    key: 'dashboard' | 'calendar' | 'transactions' | 'analytics' | 'budget';
+    label: string;
+    icon: React.ReactNode;
+  }> = [
+    { key: 'dashboard', label: 'Dashboard', icon: <PieChart size={14} /> },
+    { key: 'calendar', label: 'Calendar', icon: <CalendarIcon size={14} /> },
+    { key: 'transactions', label: 'Transactions', icon: <List size={14} /> },
+    { key: 'analytics', label: 'Analytics', icon: <PieChart size={14} /> },
+    { key: 'budget', label: 'Budget', icon: <Target size={14} /> },
+  ];
+
+  const currentNav = navItems.find((item) => item.key === activeTab) || navItems[0];
 
   return (
     <header
@@ -23,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        backgroundColor: 'rgba(255, 255, 255, 0.94)',
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--border-light)',
         padding: '0.625rem 0',
@@ -61,56 +76,49 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Center: Navigation Pill Tabs */}
+        {/* Center Desktop: Navigation Pill Tabs (hidden on mobile via CSS) */}
         <nav
-          className="pill-tab-bar"
+          className="pill-tab-bar desktop-nav-bar"
           style={{
             flexShrink: 0,
             padding: '3px',
             gap: '2px',
           }}
         >
-          <button
-            type="button"
-            className={`pill-tab-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', fontSize: '0.8rem' }}
-          >
-            <PieChart size={13} /> Dashboard
-          </button>
-          <button
-            type="button"
-            className={`pill-tab-item ${activeTab === 'calendar' ? 'active' : ''}`}
-            onClick={() => setActiveTab('calendar')}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', fontSize: '0.8rem' }}
-          >
-            <CalendarIcon size={13} /> Calendar
-          </button>
-          <button
-            type="button"
-            className={`pill-tab-item ${activeTab === 'transactions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('transactions')}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', fontSize: '0.8rem' }}
-          >
-            <List size={13} /> Transactions
-          </button>
-          <button
-            type="button"
-            className={`pill-tab-item ${activeTab === 'analytics' ? 'active' : ''}`}
-            onClick={() => setActiveTab('analytics')}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', fontSize: '0.8rem' }}
-          >
-            <PieChart size={13} /> Analytics
-          </button>
-          <button
-            type="button"
-            className={`pill-tab-item ${activeTab === 'budget' ? 'active' : ''}`}
-            onClick={() => setActiveTab('budget')}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', fontSize: '0.8rem' }}
-          >
-            <Target size={13} /> Budget
-          </button>
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`pill-tab-item ${activeTab === item.key ? 'active' : ''}`}
+              onClick={() => setActiveTab(item.key)}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', fontSize: '0.8rem' }}
+            >
+              {item.icon} {item.label}
+            </button>
+          ))}
         </nav>
+
+        {/* Center Mobile: Current Tab Accordion Toggle Button */}
+        <div className="mobile-nav-toggle-wrapper">
+          <button
+            type="button"
+            className="mobile-nav-toggle-btn"
+            onClick={() => setIsMobileNavOpen((prev) => !prev)}
+            aria-label="Toggle navigation menu"
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              {currentNav.icon}
+              <span>{currentNav.label}</span>
+            </span>
+            <ChevronDown
+              size={15}
+              style={{
+                transform: isMobileNavOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s ease',
+              }}
+            />
+          </button>
+        </div>
 
         {/* Right: Cloud Sync Status + Auth Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -252,6 +260,70 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
       </div>
+
+      {/* Mobile Accordion Dropdown Menu */}
+      {isMobileNavOpen && (
+        <div className="mobile-nav-dropdown">
+          <div className="container" style={{ padding: '0.5rem 1rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                backgroundColor: 'var(--bg-secondary)',
+                padding: '6px',
+                borderRadius: 14,
+                border: '1px solid var(--border-light)',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+              }}
+            >
+              {navItems.map((item) => {
+                const isActive = activeTab === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(item.key);
+                      setIsMobileNavOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      fontSize: '0.875rem',
+                      fontWeight: isActive ? 700 : 500,
+                      backgroundColor: isActive ? '#FFFFFF' : 'transparent',
+                      color: isActive ? 'var(--primary-blue)' : 'var(--text-primary)',
+                      boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
+                      transition: 'all 0.15s ease',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </span>
+                    {isActive && (
+                      <span
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          backgroundColor: 'var(--primary-blue)',
+                        }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

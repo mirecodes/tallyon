@@ -495,7 +495,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               </div>
 
               {/* Amount & Currency */}
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem' }}>
+              <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: 6 }}>
                     Amount *
@@ -528,7 +528,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               </div>
 
               {/* Category & Cycle */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                     <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
@@ -586,7 +586,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               </div>
 
               {/* Fixed & Cash Options in Single Mode */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 {/* Fixed Monthly Expense Option */}
                 <div
                   style={{
@@ -658,7 +658,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               </div>
 
               {/* Date & Time (with smart 24h / 12h automatic normalization) */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: 6 }}>
                     Date *

@@ -224,6 +224,7 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
 
             {/* Right: Borderless Clean Category Legend Grid (1 col for <=5, 2 cols for >5) */}
             <div
+              className="donut-legend-grid"
               style={{
                 flex: 1,
                 minWidth: 280,
