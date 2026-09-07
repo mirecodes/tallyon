@@ -67,13 +67,6 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
 
       if (error) throw error;
       if (!data || data.length === 0) {
-        // If remote is empty, check fallback local storage
-        const localData = await this.fallbackRepo.getAll();
-        if (localData.length > 0) {
-          // Sync local data to Supabase in background
-          this.createBatch(localData).catch(() => {});
-          return localData;
-        }
         return [];
       }
 
