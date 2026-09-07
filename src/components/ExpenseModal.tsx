@@ -389,20 +389,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                         e.preventDefault();
                         setActiveSuggestionIdx((prev) => (prev - 1 + filteredSuggestions.length) % filteredSuggestions.length);
                       } else if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
-                        // Accept highlighted suggestion
+                        // Accept highlighted suggestion — only fill Title, keep user's category/currency
                         e.preventDefault();
                         const picked = filteredSuggestions[activeSuggestionIdx] || filteredSuggestions[0];
                         if (picked) {
-                          setRows((prev) => {
-                            const copy = [...prev];
-                            copy[0] = {
-                              ...copy[0],
-                              description: picked.description,
-                              category: picked.category || copy[0].category,
-                              originalCurrency: picked.originalCurrency || copy[0].originalCurrency,
-                            };
-                            return copy;
-                          });
+                          handleRowChange(0, 'description', picked.description);
                           setShowSuggestions(false);
                         }
                       } else if (e.key === 'Escape') {
@@ -436,16 +427,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                         key={item.description}
                         onMouseDown={(e) => {
                           e.preventDefault(); // Prevent input blur before click
-                          setRows((prev) => {
-                            const copy = [...prev];
-                            copy[0] = {
-                              ...copy[0],
-                              description: item.description,
-                              category: item.category || copy[0].category,
-                              originalCurrency: item.originalCurrency || copy[0].originalCurrency,
-                            };
-                            return copy;
-                          });
+                          handleRowChange(0, 'description', item.description);
                           setShowSuggestions(false);
                         }}
                         onMouseEnter={() => setActiveSuggestionIdx(idx)}
