@@ -388,6 +388,7 @@ export const App: React.FC = () => {
         editingTransaction={editingTx}
         onUpdateSingle={handleUpdateSingle}
         onOpenCategoryManager={() => setIsCategoryModalOpen(true)}
+        existingTransactions={transactions}
       />
 
       {/* Category Manager Modal */}
