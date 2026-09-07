@@ -39,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
           gap: '0.75rem',
         }}
       >
-        {/* Left: Brand Logo & Cloud Status Icon Only */}
+        {/* Left: Brand Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
           <div
             style={{
@@ -59,25 +59,6 @@ export const Header: React.FC<HeaderProps> = ({
           <div style={{ fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.03em', lineHeight: 1 }}>
             Tally<span style={{ color: 'var(--primary-blue)' }}>on</span>
           </div>
-
-          {/* Cloud Sync Status: Icon Only (no text label) with tooltip */}
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 22,
-              height: 22,
-              borderRadius: '50%',
-              backgroundColor: isSupabaseConfigured ? 'var(--income-bg)' : 'var(--bg-secondary)',
-              color: isSupabaseConfigured ? 'var(--income-emerald)' : 'var(--text-muted)',
-              border: '1px solid var(--border-light)',
-              cursor: 'help',
-            }}
-            title={isSupabaseConfigured ? 'Cloud Sync Active (Supabase PostgreSQL)' : 'Local Storage Mode'}
-          >
-            {isSupabaseConfigured ? <Cloud size={12} strokeWidth={2.2} /> : <CloudOff size={12} strokeWidth={2.2} />}
-          </span>
         </div>
 
         {/* Center: Navigation Pill Tabs */}
@@ -131,8 +112,27 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </nav>
 
-        {/* Right: Google Sign In / Account Status */}
+        {/* Right: Cloud Sync Status + Auth Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {/* Cloud Sync Status Icon immediately to the left of Auth */}
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              backgroundColor: isSupabaseConfigured ? 'var(--income-bg)' : 'var(--bg-secondary)',
+              color: isSupabaseConfigured ? 'var(--income-emerald)' : 'var(--text-muted)',
+              border: '1px solid var(--border-light)',
+              cursor: 'help',
+              transition: 'all 0.2s ease',
+            }}
+            title={isSupabaseConfigured ? 'Cloud Sync Active (Supabase PostgreSQL)' : 'Local Storage Mode'}
+          >
+            {isSupabaseConfigured ? <Cloud size={14} strokeWidth={2.2} /> : <CloudOff size={14} strokeWidth={2.2} />}
+          </span>
           {isSupabaseConfigured && !isLoading && (
             <>
               {user && !isAnonymous ? (
