@@ -9,7 +9,7 @@ interface MetricCardsProps {
   totalTransactionsCount: number;
   monthlyBudget?: number;
   fixedBudget?: number;
-  freeBudget?: number;
+  flexibleBudget?: number;
   onGoToBudget?: () => void;
 }
 
@@ -19,7 +19,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   totalTransactionsCount,
   monthlyBudget: customBudget,
   fixedBudget: customFixedBudget,
-  freeBudget: customFreeBudget,
+  flexibleBudget: customFlexibleBudget,
   onGoToBudget,
 }) => {
   // Use user-configured monthly budget if provided, otherwise default estimation
@@ -37,16 +37,16 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   const fixedBudget =
     customFixedBudget !== undefined && customFixedBudget > 0
       ? customFixedBudget
-      : totalBudget * 0.45;
+      : breakdown.fixedTotal;
 
-  const freeBudget =
-    customFreeBudget !== undefined && customFreeBudget > 0
-      ? customFreeBudget
-      : totalBudget - fixedBudget;
+  const flexibleBudget =
+    customFlexibleBudget !== undefined
+      ? customFlexibleBudget
+      : Math.max(0, totalBudget - fixedBudget);
 
   const budgetUsagePercent = Math.min(
     100,
-    Math.round((breakdown.grandTotal / totalBudget) * 100)
+    totalBudget > 0 ? Math.round((breakdown.grandTotal / totalBudget) * 100) : 0
   );
 
   const fixedUsagePercent = Math.min(
@@ -54,13 +54,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
     fixedBudget > 0 ? Math.round((breakdown.fixedTotal / fixedBudget) * 100) : 0
   );
 
-  const freeUsagePercent = Math.min(
+  const flexibleUsagePercent = Math.min(
     100,
-    freeBudget > 0 ? Math.round((breakdown.freeTotal / freeBudget) * 100) : 0
+    flexibleBudget > 0 ? Math.round((breakdown.flexibleTotal / flexibleBudget) * 100) : 0
   );
 
   const fixedRatioPercent = totalBudget > 0 ? Math.round((fixedBudget / totalBudget) * 100) : 0;
-  const freeRatioPercent = totalBudget > 0 ? Math.round((freeBudget / totalBudget) * 100) : 0;
+  const flexibleRatioPercent = totalBudget > 0 ? Math.round((flexibleBudget / totalBudget) * 100) : 0;
 
   const isWarning = budgetUsagePercent >= 85;
 
@@ -113,11 +113,11 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         </div>
       </div>
 
-      {/* 2. Fixed vs Free Spending Snapshot */}
+      {/* 2. Fixed vs Flexible Spending Snapshot */}
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
           <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-            Fixed vs Free Spending
+            Fixed vs Flexible Spending
           </span>
           <span
             style={{
@@ -150,22 +150,22 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             </div>
           </div>
 
-          {/* Free Spent */}
+          {/* Flexible Spent */}
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2 }}>
-              Free / Flexible
+              Flexible
             </div>
             <div className="tabular-nums" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {formatCurrency(breakdown.freeTotal, targetCurrency)}
+              {formatCurrency(breakdown.flexibleTotal, targetCurrency)}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              {breakdown.grandTotal > 0 ? Math.round((breakdown.freeTotal / breakdown.grandTotal) * 100) : 0}% of total
+              {breakdown.grandTotal > 0 ? Math.round((breakdown.flexibleTotal / breakdown.grandTotal) * 100) : 0}% of total
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. Monthly Budget Planning & Fixed/Free Quotas */}
+      {/* 3. Monthly Budget Planning & Fixed/Flexible Quotas */}
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
           <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
@@ -231,7 +231,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           />
         </div>
 
-        {/* Sub-breakdown: Fixed Budget vs Free Budget Proportion and Usage */}
+        {/* Sub-breakdown: Fixed Budget vs Flexible Budget Proportion and Usage */}
         <div
           style={{
             display: 'flex',
@@ -244,18 +244,18 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           }}
         >
           <div>
-            <span>Fixed Quota ({fixedRatioPercent}%): </span>
+            <span>Fixed ({fixedRatioPercent}%): </span>
             <strong style={{ color: 'var(--primary-blue)' }}>
               {formatCurrency(breakdown.fixedTotal, targetCurrency)} / {formatCurrency(fixedBudget, targetCurrency)}
             </strong>{' '}
             <span>({fixedUsagePercent}%)</span>
           </div>
           <div>
-            <span>Free ({freeRatioPercent}%): </span>
+            <span>Flexible ({flexibleRatioPercent}%): </span>
             <strong style={{ color: 'var(--text-primary)' }}>
-              {formatCurrency(breakdown.freeTotal, targetCurrency)} / {formatCurrency(freeBudget, targetCurrency)}
+              {formatCurrency(breakdown.flexibleTotal, targetCurrency)} / {formatCurrency(flexibleBudget, targetCurrency)}
             </strong>{' '}
-            <span>({freeUsagePercent}%)</span>
+            <span>({flexibleUsagePercent}%)</span>
           </div>
         </div>
       </div>

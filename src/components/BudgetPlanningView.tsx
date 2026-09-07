@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import type { TargetCurrency, MonthlyBudget, ExchangeRateRecord, AnalyticsBreakdown } from '../types';
+import type { TargetCurrency, MonthlyBudget, ExchangeRateRecord, AnalyticsBreakdown, ValuatedTransaction } from '../types';
 import { formatCurrency } from '../utils/currency';
 import { STATIC_FALLBACK_RATES } from '../repositories/LocalStorageExchangeRateRepository';
-import { ChevronLeft, ChevronRight, Save, Check, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, Check, Trash2, Calendar, Lock, Sliders, ShieldCheck } from 'lucide-react';
 
 interface BudgetPlanningViewProps {
   budgetsMap: Record<string, MonthlyBudget>;
@@ -12,20 +12,9 @@ interface BudgetPlanningViewProps {
   breakdown: AnalyticsBreakdown;
   selectedYearMonth?: string;
   onMonthChange?: (ym: string) => void;
+  fixedTransactions?: ValuatedTransaction[];
+  onStopFixedExpense?: (tx: ValuatedTransaction) => Promise<void>;
 }
-
-const CATEGORIES = [
-  'Groceries',
-  'Food & Dining',
-  'Transport',
-  'Housing & Utilities',
-  'Subscriptions',
-  'Education & Books',
-  'Shopping',
-  'Health & Personal',
-  'Leisure & Travel',
-  'Other',
-];
 
 export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
   budgetsMap,
@@ -35,8 +24,9 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
   breakdown,
   selectedYearMonth: externalYearMonth,
   onMonthChange,
+  fixedTransactions = [],
+  onStopFixedExpense,
 }) => {
-  // Current month state YYYY-MM
   const now = new Date();
   const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [internalYearMonth, setInternalYearMonth] = useState<string>(currentYM);
@@ -51,7 +41,7 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
 
   const [savedNotice, setSavedNotice] = useState(false);
 
-  // Parse Year and Month
+  // Month navigation
   const [yearStr, monthStr] = selectedYearMonth.split('-');
   const currentYear = parseInt(yearStr, 10);
   const currentMonth = parseInt(monthStr, 10);
@@ -66,136 +56,71 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
     setSelectedYearMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
   };
 
-  // Get or initialize budget for this month
+  // Raw budget record
   const rawBudget: MonthlyBudget = budgetsMap[selectedYearMonth] || {
     yearMonth: selectedYearMonth,
+    baseBudget: 3000000,
+    extraBudget: 0,
     totalBudget: 3000000,
     currency: 'KRW',
-    categoryBudgets: {},
     updatedAt: new Date().toISOString(),
   };
 
-  // Convert budget to target currency for display and editing
-  // 1. First convert raw budget to KRW
   const latestRateRecord =
     ratesMap[`${selectedYearMonth}-01`] || ratesMap[Object.keys(ratesMap)[0]] || STATIC_FALLBACK_RATES;
   const rates = latestRateRecord.rates;
 
-  const budgetInKrw =
-    rawBudget.currency === 'KRW'
-      ? rawBudget.totalBudget
-      : rawBudget.totalBudget * (rates[rawBudget.currency] || STATIC_FALLBACK_RATES.rates[rawBudget.currency]);
-
-  // 2. Convert from KRW to target currency
-  const convertedTotalBudget =
-    targetCurrency === 'KRW'
-      ? Math.round(budgetInKrw)
-      : Number((budgetInKrw / (rates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1)).toFixed(2));
-
-  // Convert fixed and free budgets
-  const fixedInKrw =
-    rawBudget.fixedBudget !== undefined
-      ? rawBudget.currency === 'KRW'
-        ? rawBudget.fixedBudget
-        : rawBudget.fixedBudget * (rates[rawBudget.currency] || STATIC_FALLBACK_RATES.rates[rawBudget.currency])
-      : budgetInKrw * 0.45; // default 45% if unspecified
-
-  const freeInKrw =
-    rawBudget.freeBudget !== undefined
-      ? rawBudget.currency === 'KRW'
-        ? rawBudget.freeBudget
-        : rawBudget.freeBudget * (rates[rawBudget.currency] || STATIC_FALLBACK_RATES.rates[rawBudget.currency])
-      : budgetInKrw * 0.55; // default 55% if unspecified
-
-  const convertedFixedBudget =
-    targetCurrency === 'KRW'
-      ? Math.round(fixedInKrw)
-      : Number((fixedInKrw / (rates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1)).toFixed(2));
-
-  const convertedFreeBudget =
-    targetCurrency === 'KRW'
-      ? Math.round(freeInKrw)
-      : Number((freeInKrw / (rates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1)).toFixed(2));
-
-  // Form input local states
-  const [inputTotal, setInputTotal] = useState<string>(convertedTotalBudget.toString());
-  const [inputFixed, setInputFixed] = useState<string>(convertedFixedBudget.toString());
-  const [inputFree, setInputFree] = useState<string>(convertedFreeBudget.toString());
-
-  const [categoryInputs, setCategoryInputs] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    const catBudgets = rawBudget.categoryBudgets || {};
-    for (const cat of CATEGORIES) {
-      const valInOrig = catBudgets[cat] || 0;
-      if (valInOrig > 0) {
-        const valInKrw =
-          rawBudget.currency === 'KRW'
-            ? valInOrig
-            : valInOrig * (rates[rawBudget.currency] || STATIC_FALLBACK_RATES.rates[rawBudget.currency]);
-        const valInTarget =
-          targetCurrency === 'KRW'
-            ? Math.round(valInKrw)
-            : Number((valInKrw / (rates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1)).toFixed(2));
-        init[cat] = valInTarget.toString();
-      } else {
-        init[cat] = '';
-      }
-    }
-    return init;
-  });
-
-  // Sync state whenever month or targetCurrency changes
-  React.useEffect(() => {
-    setInputTotal(convertedTotalBudget.toString());
-    setInputFixed(convertedFixedBudget.toString());
-    setInputFree(convertedFreeBudget.toString());
-
-    const init: Record<string, string> = {};
-    const catBudgets = rawBudget.categoryBudgets || {};
-    for (const cat of CATEGORIES) {
-      const valInOrig = catBudgets[cat] || 0;
-      if (valInOrig > 0) {
-        const valInKrw =
-          rawBudget.currency === 'KRW'
-            ? valInOrig
-            : valInOrig * (rates[rawBudget.currency] || STATIC_FALLBACK_RATES.rates[rawBudget.currency]);
-        const valInTarget =
-          targetCurrency === 'KRW'
-            ? Math.round(valInKrw)
-            : Number((valInKrw / (rates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1)).toFixed(2));
-        init[cat] = valInTarget.toString();
-      } else {
-        init[cat] = '';
-      }
-    }
-    setCategoryInputs(init);
-  }, [selectedYearMonth, targetCurrency]);
-
-  const handleCategoryChange = (cat: string, value: string) => {
-    setCategoryInputs((prev) => ({ ...prev, [cat]: value }));
+  // Convert raw base and extra budget to targetCurrency
+  const convertToTarget = (amount: number, fromCurrency: string) => {
+    const inKrw =
+      fromCurrency === 'KRW'
+        ? amount
+        : amount * (rates[fromCurrency as keyof typeof rates] || STATIC_FALLBACK_RATES.rates[fromCurrency as keyof typeof rates] || 1);
+    return targetCurrency === 'KRW'
+      ? Math.round(inKrw)
+      : Number((inKrw / (rates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1)).toFixed(2));
   };
+
+  const convertedBaseBudget = convertToTarget(rawBudget.baseBudget ?? rawBudget.totalBudget ?? 3000000, rawBudget.currency);
+  const convertedExtraBudget = convertToTarget(rawBudget.extraBudget ?? 0, rawBudget.currency);
+
+  // Local input state in targetCurrency
+  const [inputBase, setInputBase] = useState<string>(convertedBaseBudget.toString());
+  const [inputExtra, setInputExtra] = useState<string>(convertedExtraBudget.toString());
+
+  React.useEffect(() => {
+    setInputBase(convertedBaseBudget.toString());
+    setInputExtra(convertedExtraBudget.toString());
+  }, [selectedYearMonth, targetCurrency, convertedBaseBudget, convertedExtraBudget]);
+
+  // Derived Total Monthly Budget
+  const numBase = parseFloat(inputBase) || 0;
+  const numExtra = parseFloat(inputExtra) || 0;
+  const computedTotalBudget = numBase + numExtra;
+
+  // Auto-calculated Fixed Budget from active fixed expenses in this month
+  const autoFixedBudget = breakdown.fixedTotal;
+  const autoFlexibleBudget = Math.max(0, computedTotalBudget - autoFixedBudget);
+
+  const fixedRatio = computedTotalBudget > 0 ? Math.round((autoFixedBudget / computedTotalBudget) * 100) : 0;
+  const flexibleRatio = computedTotalBudget > 0 ? Math.max(0, 100 - fixedRatio) : 0;
+
+  // Actual spending stats
+  const actualSpent = breakdown.grandTotal;
+  const remainingBudget = computedTotalBudget - actualSpent;
+  const usagePercentage = computedTotalBudget > 0 ? Math.round((actualSpent / computedTotalBudget) * 100) : 0;
+  const isOverBudget = usagePercentage > 100;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsedTotal = parseFloat(inputTotal) || 0;
-    const parsedFixed = parseFloat(inputFixed) || 0;
-    const parsedFree = parseFloat(inputFree) || Math.max(0, parsedTotal - parsedFixed);
-
-    const parsedCategories: Record<string, number> = {};
-    for (const [cat, valStr] of Object.entries(categoryInputs)) {
-      const num = parseFloat(valStr);
-      if (!isNaN(num) && num > 0) {
-        parsedCategories[cat] = num;
-      }
-    }
-
     const updatedBudget: MonthlyBudget = {
       yearMonth: selectedYearMonth,
-      totalBudget: parsedTotal,
-      fixedBudget: parsedFixed,
-      freeBudget: parsedFree,
+      baseBudget: numBase,
+      extraBudget: numExtra,
+      totalBudget: computedTotalBudget,
+      fixedBudget: autoFixedBudget,
+      flexibleBudget: autoFlexibleBudget,
       currency: targetCurrency,
-      categoryBudgets: parsedCategories,
       updatedAt: new Date().toISOString(),
     };
 
@@ -204,14 +129,6 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
     setTimeout(() => setSavedNotice(false), 2500);
   };
 
-  // Spending vs Budget stats for this month
-  const actualSpent = breakdown.grandTotal;
-  const currentBudgetNum = parseFloat(inputTotal) || convertedTotalBudget;
-  const remainingBudget = currentBudgetNum - actualSpent;
-  const usagePercentage = currentBudgetNum > 0 ? Math.round((actualSpent / currentBudgetNum) * 100) : 0;
-  const isOverBudget = usagePercentage > 100;
-
-  // Month Title
   const monthDate = new Date(currentYear, currentMonth - 1, 1);
   const monthLabel = monthDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
@@ -233,7 +150,7 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
               Monthly Budget Planning — <span style={{ color: 'var(--primary-blue)' }}>{monthLabel}</span>
             </h2>
             <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 3 }}>
-              Set and monitor your monthly expenditure ceilings in <strong>{targetCurrency}</strong>.
+              Manage base budget, extra adjustments, and recurring fixed expenses in <strong>{targetCurrency}</strong>.
             </div>
           </div>
 
@@ -272,31 +189,31 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
         </div>
       </div>
 
-      {/* 2. Budget Health Status Summary Grid */}
+      {/* 2. Top Summary KPI Cards */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
           gap: '1.25rem',
         }}
       >
-        {/* Planned Budget */}
+        {/* Total Monthly Budget */}
         <div className="card">
           <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-            Total Planned Budget
+            Total Monthly Budget
           </span>
           <div
             className="tabular-nums"
             style={{ fontSize: '1.625rem', fontWeight: 800, marginTop: 4, color: 'var(--primary-blue)' }}
           >
-            {formatCurrency(currentBudgetNum, targetCurrency)}
+            {formatCurrency(computedTotalBudget, targetCurrency)}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
-            Currency standard: {targetCurrency}
+            Base ({formatCurrency(numBase, targetCurrency)}) {numExtra >= 0 ? '+' : '-'} Extra ({formatCurrency(Math.abs(numExtra), targetCurrency)})
           </div>
         </div>
 
-        {/* Actual Spent */}
+        {/* Current Spending */}
         <div className="card">
           <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
             Current Total Spent
@@ -308,7 +225,7 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
             {formatCurrency(actualSpent, targetCurrency)}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
-            {usagePercentage}% of allocated budget used
+            {usagePercentage}% of total monthly budget
           </div>
         </div>
 
@@ -329,13 +246,19 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
             {isOverBudget ? '-' : ''}
             {formatCurrency(Math.abs(remainingBudget), targetCurrency)}
           </div>
-          <div style={{ fontSize: '0.75rem', color: isOverBudget ? 'var(--expense-rose)' : 'var(--income-emerald)', marginTop: 4 }}>
-            {isOverBudget ? 'Budget exceeded!' : 'Within target limit'}
+          <div
+            style={{
+              fontSize: '0.75rem',
+              color: isOverBudget ? 'var(--expense-rose)' : 'var(--income-emerald)',
+              marginTop: 4,
+            }}
+          >
+            {isOverBudget ? 'Budget exceeded' : 'Within planned limits'}
           </div>
         </div>
       </div>
 
-      {/* 3. Budget Edit Form */}
+      {/* 3. Budget Inputs & Automatic Allocation Breakdown */}
       <form onSubmit={handleSave}>
         <div className="card" style={{ padding: '1.75rem' }}>
           <div
@@ -346,12 +269,16 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
               marginBottom: '1.5rem',
               borderBottom: '1px solid var(--border-light)',
               paddingBottom: '1rem',
+              flexWrap: 'wrap',
+              gap: '1rem',
             }}
           >
             <div>
-              <h3 style={{ fontSize: '1.125rem', margin: 0 }}>Configure Budget Limits</h3>
+              <h3 style={{ fontSize: '1.125rem', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sliders size={18} color="var(--primary-blue)" /> Monthly Budget Configuration
+              </h3>
               <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                Update overall monthly limit and individual category allocations.
+                Enter your base budget and positive or negative extra adjustments. Fixed and flexible shares calculate automatically.
               </div>
             </div>
 
@@ -367,246 +294,376 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
             </button>
           </div>
 
-          {/* Overall Monthly Budget & Fixed/Free Allocation Inputs */}
+          {/* Base Budget & Extra Budget Inputs */}
           <div
             style={{
-              padding: '1.25rem',
-              borderRadius: 12,
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--primary-blue-tint)',
-              marginBottom: '2rem',
-              display: 'flex',
-              flexDirection: 'column',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
               gap: '1.25rem',
+              marginBottom: '1.75rem',
             }}
           >
-            <div>
+            {/* Base Monthly Budget */}
+            <div
+              style={{
+                padding: '1.25rem',
+                borderRadius: 12,
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-light)',
+              }}
+            >
               <label
                 style={{
                   display: 'block',
                   fontSize: '0.875rem',
                   fontWeight: 700,
-                  color: 'var(--primary-blue)',
+                  color: 'var(--text-primary)',
                   marginBottom: 6,
                 }}
               >
-                Overall Monthly Limit ({targetCurrency}) *
+                Monthly Base Budget ({targetCurrency}) *
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', maxWidth: 400 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input
                   type="number"
                   step="0.01"
-                  value={inputTotal}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setInputTotal(val);
-                    const num = parseFloat(val) || 0;
-                    // Auto-proportion if empty
-                    setInputFixed(Math.round(num * 0.45).toString());
-                    setInputFree(Math.round(num * 0.55).toString());
-                  }}
+                  value={inputBase}
+                  onChange={(e) => setInputBase(e.target.value)}
                   placeholder="e.g. 3000000"
                   style={{
                     fontSize: '1.125rem',
                     fontWeight: 700,
                     width: '100%',
-                    padding: '8px 14px',
+                    padding: '8px 12px',
                   }}
                 />
                 <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                   {targetCurrency}
                 </span>
               </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                Your regular recurring monthly budget baseline.
+              </div>
             </div>
 
-            {/* Fixed vs Free Split Inputs */}
+            {/* Extra Budget (+/-) */}
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                gap: '1rem',
-                borderTop: '1px solid var(--border-light)',
-                paddingTop: '1rem',
+                padding: '1.25rem',
+                borderRadius: 12,
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-light)',
               }}
             >
-              {/* Fixed Budget Input */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    Fixed Budget (고정 예산)
-                  </label>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    {parseFloat(inputTotal) > 0
-                      ? Math.round(((parseFloat(inputFixed) || 0) / parseFloat(inputTotal)) * 100)
-                      : 0}
-                    %
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={inputFixed}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setInputFixed(val);
-                      const fNum = parseFloat(val) || 0;
-                      const tNum = parseFloat(inputTotal) || 0;
-                      if (tNum > 0) {
-                        setInputFree(Math.max(0, tNum - fNum).toString());
-                      }
-                    }}
-                    placeholder="Fixed commitments"
-                    style={{ width: '100%', padding: '8px 12px', fontWeight: 600 }}
-                  />
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                    {targetCurrency}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                  Rent, utilities, subscriptions & fixed commitments
-                </div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  marginBottom: 6,
+                }}
+              >
+                Extra Budget Adjustment (+ / -)
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={inputExtra}
+                  onChange={(e) => setInputExtra(e.target.value)}
+                  placeholder="e.g. 200000 or -150000"
+                  style={{
+                    fontSize: '1.125rem',
+                    fontWeight: 700,
+                    width: '100%',
+                    padding: '8px 12px',
+                  }}
+                />
+                <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  {targetCurrency}
+                </span>
               </div>
-
-              {/* Free Budget Input */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    Free / Flexible Budget (자유 예산)
-                  </label>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    {parseFloat(inputTotal) > 0
-                      ? Math.round(((parseFloat(inputFree) || 0) / parseFloat(inputTotal)) * 100)
-                      : 0}
-                    %
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={inputFree}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setInputFree(val);
-                      const frNum = parseFloat(val) || 0;
-                      const tNum = parseFloat(inputTotal) || 0;
-                      if (tNum > 0) {
-                        setInputFixed(Math.max(0, tNum - frNum).toString());
-                      }
-                    }}
-                    placeholder="Flexible spending"
-                    style={{ width: '100%', padding: '8px 12px', fontWeight: 600 }}
-                  />
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                    {targetCurrency}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                  Groceries, dining, leisure & variable spending
-                </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                Bonus, special allowance (+), or savings deduction (-).
               </div>
             </div>
           </div>
 
-          {/* Category-Level Budget Allocation Grid */}
-          <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, marginBottom: '1rem' }}>
-            Category Allocations (Optional Targets)
-          </h4>
-
+          {/* Automatic Fixed vs Flexible Calculation Display */}
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
+              padding: '1.25rem 1.5rem',
+              borderRadius: 12,
+              backgroundColor: 'var(--bg-tertiary)',
+              border: '1px solid var(--primary-blue-tint)',
+              display: 'flex',
+              flexDirection: 'column',
               gap: '1rem',
             }}
           >
-            {CATEGORIES.map((cat) => {
-              const actualCatSpent = breakdown.byCategory.find((c) => c.category === cat)?.totalAmount || 0;
-              const catBudgetLimit = parseFloat(categoryInputs[cat] || '0') || 0;
-              const isCatExceeded = catBudgetLimit > 0 && actualCatSpent > catBudgetLimit;
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                Automated Allocation Split (Total: {formatCurrency(computedTotalBudget, targetCurrency)})
+              </span>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '3px 8px',
+                  borderRadius: 6,
+                  backgroundColor: 'var(--bg-card)',
+                  color: 'var(--primary-blue)',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                <ShieldCheck size={14} /> Auto-calculated
+              </span>
+            </div>
 
-              return (
-                <div
-                  key={cat}
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 10,
-                    backgroundColor: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-light)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{cat}</span>
-                    {isCatExceeded && (
-                      <span
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 3,
-                          fontSize: '0.6875rem',
-                          color: 'var(--expense-rose)',
-                          fontWeight: 700,
-                        }}
-                      >
-                        <AlertTriangle size={12} /> Over limit
-                      </span>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="No limit"
-                      value={categoryInputs[cat] || ''}
-                      onChange={(e) => handleCategoryChange(cat, e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '6px 10px',
-                        fontSize: '0.8125rem',
-                      }}
-                    />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                      {targetCurrency}
-                    </span>
-                  </div>
-
-                  {actualCatSpent > 0 && (
-                    <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
-                      Current spent: <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(actualCatSpent, targetCurrency)}</strong>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              marginTop: '2rem',
-              borderTop: '1px solid var(--border-light)',
-              paddingTop: '1.25rem',
-            }}
-          >
-            <button
-              type="submit"
-              className="btn-primary"
+            {/* Split Bar */}
+            <div
               style={{
-                backgroundColor: savedNotice ? 'var(--income-emerald)' : 'var(--primary-blue)',
+                width: '100%',
+                height: 10,
+                backgroundColor: 'var(--border-light)',
+                borderRadius: 9999,
+                overflow: 'hidden',
+                display: 'flex',
               }}
             >
-              {savedNotice ? <Check size={16} /> : <Save size={16} />}
-              <span>{savedNotice ? 'Saved Changes!' : 'Save Budget Configuration'}</span>
-            </button>
+              <div
+                style={{
+                  width: `${fixedRatio}%`,
+                  height: '100%',
+                  backgroundColor: 'var(--primary-blue)',
+                  transition: 'width 0.3s ease',
+                }}
+                title={`Fixed: ${fixedRatio}%`}
+              />
+              <div
+                style={{
+                  width: `${flexibleRatio}%`,
+                  height: '100%',
+                  backgroundColor: 'var(--income-emerald)',
+                  transition: 'width 0.3s ease',
+                }}
+                title={`Flexible: ${flexibleRatio}%`}
+              />
+            </div>
+
+            {/* Fixed vs Flexible Details */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '1rem',
+              }}
+            >
+              {/* Fixed Share */}
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  backgroundColor: 'var(--bg-card)',
+                  border: '1px solid var(--border-light)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--primary-blue)' }}>
+                    Fixed Budget
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                    {fixedRatio}% of total
+                  </span>
+                </div>
+                <div className="tabular-nums" style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: 4 }}>
+                  {formatCurrency(autoFixedBudget, targetCurrency)}
+                </div>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                  Sum of active recurring fixed expenses below
+                </div>
+              </div>
+
+              {/* Flexible Share */}
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  backgroundColor: 'var(--bg-card)',
+                  border: '1px solid var(--border-light)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--income-emerald)' }}>
+                    Flexible Budget
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                    {flexibleRatio}% of total
+                  </span>
+                </div>
+                <div className="tabular-nums" style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: 4 }}>
+                  {formatCurrency(autoFlexibleBudget, targetCurrency)}
+                </div>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                  Total budget minus fixed commitments
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </form>
-    </div>
-  );
-};
+
+      {/* 4. Active Fixed Expenses Management Section */}
+      <div className="card" style={{ padding: '1.75rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '1.25rem',
+            borderBottom: '1px solid var(--border-light)',
+            paddingBottom: '1rem',
+          }}
+        >
+          <div>
+            <h3 style={{ fontSize: '1.125rem', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Lock size={18} color="var(--primary-blue)" /> Active Fixed Expenses ({selectedYearMonth})
+            </h3>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              Fixed expenses automatically populate every month. Deleting an item here removes it from this month and all future months.
+            </div>
+          </div>
+
+          <div
+            className="tabular-nums"
+            style={{
+              fontSize: '0.875rem',
+              fontWeight: 700,
+              padding: '6px 12px',
+              borderRadius: 8,
+              backgroundColor: 'var(--bg-tertiary)',
+              color: 'var(--primary-blue)',
+            }}
+          >
+            Total Fixed: {formatCurrency(autoFixedBudget, targetCurrency)}
+          </div>
+        </div>
+
+        {fixedTransactions.length === 0 ? (
+          <div
+            style={{
+              padding: '2.5rem 1rem',
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              backgroundColor: 'var(--bg-secondary)',
+              borderRadius: 12,
+              border: '1px dashed var(--border-light)',
+            }}
+          >
+            <Calendar size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />
+            <div style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text-secondary)' }}>
+              No active fixed expenses for {monthLabel}
+            </div>
+            <div style={{ fontSize: '0.8125rem', marginTop: 4 }}>
+              To add a fixed expense, click the pencil button and toggle "Recurring Fixed Expense".
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {fixedTransactions.map((tx) => (
+              <div
+                key={tx.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 16px',
+                  borderRadius: 10,
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-light)',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 200 }}>
+                  <span
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: 6,
+                      backgroundColor: 'var(--bg-tertiary)',
+                      color: 'var(--primary-blue)',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {tx.category}
+                  </span>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-primary)' }}>
+                      {tx.description}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {tx.isAutoGenerated ? 'Recurring (projected)' : 'Original entry'} •{' '}
+                      {new Date(tx.transactionTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div
+                      className="tabular-nums"
+                      style={{ fontSize: '1.0625rem', fontWeight: 800, color: 'var(--text-primary)' }}
+                    >
+                      {formatCurrency(tx.convertedAmount, targetCurrency)}
+                    </div>
+                    {tx.originalCurrency !== targetCurrency && (
+                      <div className="tabular-nums" style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
+                        {formatCurrency(tx.originalAmount, tx.originalCurrency)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Delete / Terminate button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Stop recurring expense "${tx.description}" starting from ${selectedYearMonth} onward?`
+                        )
+                      ) {
+                        onStopFixedExpense?.(tx);
+                      }
+                    }}
+                    style={{
+                      padding: '7px 10px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border-light)',
+                      backgroundColor: 'var(--bg-primary)',
+                      color: 'var(--expense-rose)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                    }}
+                    title={`Delete from ${selectedYearMonth} and subsequent months`}
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete</span>
+                  </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
