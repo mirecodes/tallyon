@@ -219,7 +219,11 @@ export const App: React.FC = () => {
           {activeTab === 'dashboard' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               {/* Top View: Breakdown Analytics */}
-              <BreakdownAnalyticsView breakdown={breakdown} targetCurrency={targetCurrency} />
+              <BreakdownAnalyticsView
+                breakdown={breakdown}
+                targetCurrency={targetCurrency}
+                monthlyBudget={currentMonthlyBudgetInTarget}
+              />
 
               {/* Bottom View: Recent Transactions List */}
               <FilteredListView
@@ -251,7 +255,11 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'analytics' && (
-            <BreakdownAnalyticsView breakdown={breakdown} targetCurrency={targetCurrency} />
+            <BreakdownAnalyticsView
+              breakdown={breakdown}
+              targetCurrency={targetCurrency}
+              monthlyBudget={currentMonthlyBudgetInTarget}
+            />
           )}
 
           {activeTab === 'budget' && (
