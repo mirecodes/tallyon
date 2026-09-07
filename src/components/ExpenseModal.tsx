@@ -59,9 +59,14 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
   const [rows, setRows] = useState<FormRow[]>([createInitialRow()]);
 
-  // If editing an existing transaction
+  // Initialize rows ONLY when modal transitions from closed to open, or when editingTransaction changes
   useEffect(() => {
     if (!isOpen) return;
+
+    const nowObj = new Date();
+    const curDate = toLocalDateString(nowObj);
+    const curTime = `${String(nowObj.getHours()).padStart(2, '0')}:${String(nowObj.getMinutes()).padStart(2, '0')}`;
+
     if (editingTransaction) {
       setIsBatchMode(false);
       const d = new Date(editingTransaction.transactionTime);
@@ -83,16 +88,17 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           description: '',
           originalAmount: '',
           originalCurrency: 'CHF',
-          category: 'Groceries',
+          category: defaultCategory,
           expenseNature: 'ONE_OFF',
           isFixed: false,
-          transactionDate: defaultDate,
-          transactionTime: defaultTime,
+          transactionDate: curDate,
+          transactionTime: curTime,
         },
       ]);
     }
     setErrorMsg(null);
-  }, [editingTransaction, isOpen, defaultDate, defaultTime]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, editingTransaction]);
 
   if (!isOpen) return null;
 
