@@ -54,7 +54,16 @@ export interface AnalyticsBreakdown {
   }>;
 }
 
-// 6. Repository Contracts
+// 6. Monthly Budget Domain Entity
+export interface MonthlyBudget {
+  yearMonth: string;                  // YYYY-MM (e.g. "2026-09")
+  totalBudget: number;                // Total budget amount in base targetCurrency
+  currency: CurrencyCode;             // Currency the budget was set in
+  categoryBudgets?: Record<string, number>; // Optional breakdown per category
+  updatedAt: string;
+}
+
+// 7. Repository Contracts
 export interface ITransactionRepository {
   create(transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>): Promise<Transaction>;
   createBatch(transactions: Array<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Transaction[]>;
@@ -69,4 +78,10 @@ export interface IExchangeRateRepository {
   getRatesBatch(dates: string[]): Promise<Record<string, ExchangeRateRecord>>;
   saveRates(record: ExchangeRateRecord): Promise<void>;
   getLatestAvailableRate(targetDate: string): Promise<ExchangeRateRecord | null>;
+}
+
+export interface IBudgetRepository {
+  getBudget(yearMonth: string): Promise<MonthlyBudget | null>;
+  getAllBudgets(): Promise<Record<string, MonthlyBudget>>;
+  saveBudget(budget: MonthlyBudget): Promise<void>;
 }

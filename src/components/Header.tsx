@@ -1,9 +1,9 @@
 import React from 'react';
-import { Wallet, Calendar as CalendarIcon, List, PieChart } from 'lucide-react';
+import { Wallet, Calendar as CalendarIcon, List, PieChart, Target } from 'lucide-react';
 
 interface HeaderProps {
-  activeTab: 'dashboard' | 'calendar' | 'transactions' | 'analytics';
-  setActiveTab: (tab: 'dashboard' | 'calendar' | 'transactions' | 'analytics') => void;
+  activeTab: 'dashboard' | 'calendar' | 'transactions' | 'analytics' | 'budget';
+  setActiveTab: (tab: 'dashboard' | 'calendar' | 'transactions' | 'analytics' | 'budget') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -86,6 +86,14 @@ export const Header: React.FC<HeaderProps> = ({
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
             <PieChart size={14} /> Analytics
+          </button>
+          <button
+            type="button"
+            className={`pill-tab-item ${activeTab === 'budget' ? 'active' : ''}`}
+            onClick={() => setActiveTab('budget')}
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <Target size={14} /> Budget
           </button>
         </nav>
       </div>

@@ -7,16 +7,22 @@ interface MetricCardsProps {
   breakdown: AnalyticsBreakdown;
   targetCurrency: TargetCurrency;
   totalTransactionsCount: number;
+  monthlyBudget?: number;
+  onGoToBudget?: () => void;
 }
 
 export const MetricCards: React.FC<MetricCardsProps> = ({
   breakdown,
   targetCurrency,
   totalTransactionsCount,
+  monthlyBudget: customBudget,
+  onGoToBudget,
 }) => {
-  // Estimated monthly budget for illustration across currencies
+  // Use user-configured monthly budget if provided, otherwise default estimation
   const monthlyBudget =
-    targetCurrency === 'CHF'
+    customBudget && customBudget > 0
+      ? customBudget
+      : targetCurrency === 'CHF'
       ? 2000
       : targetCurrency === 'USD'
       ? 2200
@@ -120,9 +126,11 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
           <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-            Estimated Budget
+            Monthly Budget
           </span>
-          <span
+          <button
+            type="button"
+            onClick={onGoToBudget}
             style={{
               padding: '3px 8px',
               borderRadius: 6,
@@ -133,10 +141,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: 4,
+              cursor: onGoToBudget ? 'pointer' : 'default',
+              border: 'none',
             }}
+            title="Click to view and edit budget"
           >
             <Calendar size={14} /> {budgetUsagePercent}% Used
-          </span>
+          </button>
         </div>
         <div
           className="tabular-nums"
