@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
         backgroundColor: 'rgba(255, 255, 255, 0.92)',
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--border-light)',
-        padding: '0.75rem 0',
+        padding: '0.625rem 0',
       }}
     >
       <div
@@ -35,12 +35,12 @@ export const Header: React.FC<HeaderProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem',
+          flexWrap: 'nowrap',
+          gap: '0.75rem',
         }}
       >
-        {/* Brand Logo & Name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {/* Left: Brand Logo & Cloud Status Icon Only */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
           <div
             style={{
               width: 32,
@@ -60,83 +60,89 @@ export const Header: React.FC<HeaderProps> = ({
             Tally<span style={{ color: 'var(--primary-blue)' }}>on</span>
           </div>
 
-          {/* Cloud Sync Status Indicator */}
+          {/* Cloud Sync Status: Icon Only (no text label) with tooltip */}
           <span
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 4,
-              fontSize: '0.6875rem',
-              fontWeight: 700,
-              padding: '2px 8px',
-              borderRadius: '9999px',
+              justifyContent: 'center',
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
               backgroundColor: isSupabaseConfigured ? 'var(--income-bg)' : 'var(--bg-secondary)',
               color: isSupabaseConfigured ? 'var(--income-emerald)' : 'var(--text-muted)',
               border: '1px solid var(--border-light)',
+              cursor: 'help',
             }}
-            title={isSupabaseConfigured ? 'Connected to Supabase Cloud' : 'Running in Local Storage Mode'}
+            title={isSupabaseConfigured ? 'Cloud Sync Active (Supabase PostgreSQL)' : 'Local Storage Mode'}
           >
-            {isSupabaseConfigured ? <Cloud size={11} /> : <CloudOff size={11} />}
-            <span>{isSupabaseConfigured ? 'Cloud Sync' : 'Local'}</span>
+            {isSupabaseConfigured ? <Cloud size={12} strokeWidth={2.2} /> : <CloudOff size={12} strokeWidth={2.2} />}
           </span>
         </div>
 
         {/* Center: Navigation Pill Tabs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <nav className="pill-tab-bar">
-            <button
-              type="button"
-              className={`pill-tab-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setActiveTab('dashboard')}
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              <PieChart size={14} /> Dashboard
-            </button>
-            <button
-              type="button"
-              className={`pill-tab-item ${activeTab === 'calendar' ? 'active' : ''}`}
-              onClick={() => setActiveTab('calendar')}
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              <CalendarIcon size={14} /> Calendar
-            </button>
-            <button
-              type="button"
-              className={`pill-tab-item ${activeTab === 'transactions' ? 'active' : ''}`}
-              onClick={() => setActiveTab('transactions')}
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              <List size={14} /> Transactions
-            </button>
-            <button
-              type="button"
-              className={`pill-tab-item ${activeTab === 'analytics' ? 'active' : ''}`}
-              onClick={() => setActiveTab('analytics')}
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              <PieChart size={14} /> Analytics
-            </button>
-            <button
-              type="button"
-              className={`pill-tab-item ${activeTab === 'budget' ? 'active' : ''}`}
-              onClick={() => setActiveTab('budget')}
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              <Target size={14} /> Budget
-            </button>
-          </nav>
+        <nav
+          className="pill-tab-bar"
+          style={{
+            flexShrink: 0,
+            padding: '3px',
+            gap: '2px',
+          }}
+        >
+          <button
+            type="button"
+            className={`pill-tab-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', fontSize: '0.8rem' }}
+          >
+            <PieChart size={13} /> Dashboard
+          </button>
+          <button
+            type="button"
+            className={`pill-tab-item ${activeTab === 'calendar' ? 'active' : ''}`}
+            onClick={() => setActiveTab('calendar')}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', fontSize: '0.8rem' }}
+          >
+            <CalendarIcon size={13} /> Calendar
+          </button>
+          <button
+            type="button"
+            className={`pill-tab-item ${activeTab === 'transactions' ? 'active' : ''}`}
+            onClick={() => setActiveTab('transactions')}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', fontSize: '0.8rem' }}
+          >
+            <List size={13} /> Transactions
+          </button>
+          <button
+            type="button"
+            className={`pill-tab-item ${activeTab === 'analytics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', fontSize: '0.8rem' }}
+          >
+            <PieChart size={13} /> Analytics
+          </button>
+          <button
+            type="button"
+            className={`pill-tab-item ${activeTab === 'budget' ? 'active' : ''}`}
+            onClick={() => setActiveTab('budget')}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', fontSize: '0.8rem' }}
+          >
+            <Target size={13} /> Budget
+          </button>
+        </nav>
 
-          {/* Right: Google Sign In / Account Status */}
+        {/* Right: Google Sign In / Account Status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           {isSupabaseConfigured && !isLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <>
               {user && !isAnonymous ? (
                 // Authenticated Google User Account
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
-                    padding: '4px 8px 4px 6px',
+                    gap: 6,
+                    padding: '3px 8px 3px 4px',
                     borderRadius: '9999px',
                     backgroundColor: 'var(--bg-secondary)',
                     border: '1px solid var(--border-light)',
@@ -170,9 +176,9 @@ export const Header: React.FC<HeaderProps> = ({
                   <span
                     style={{
                       fontSize: '0.75rem',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       color: 'var(--text-primary)',
-                      maxWidth: 120,
+                      maxWidth: 100,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -194,7 +200,7 @@ export const Header: React.FC<HeaderProps> = ({
                       background: 'transparent',
                       color: 'var(--text-muted)',
                       cursor: 'pointer',
-                      padding: 3,
+                      padding: 2,
                       display: 'flex',
                       alignItems: 'center',
                       borderRadius: 4,
@@ -212,15 +218,16 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => signInWithGoogle()}
                   className="btn-secondary"
                   style={{
-                    padding: '6px 12px',
+                    padding: '5px 10px',
                     fontSize: '0.75rem',
                     borderRadius: '9999px',
                     gap: 6,
-                    fontWeight: 700,
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
                   }}
-                  title="Sign in with Google to isolate and sync your personal data across devices"
+                  title="Sign in with Google to isolate and sync your personal data"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24">
+                  <svg width="13" height="13" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -238,10 +245,10 @@ export const Header: React.FC<HeaderProps> = ({
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                     />
                   </svg>
-                  <span>Google Sign In</span>
+                  <span>Sign In</span>
                 </button>
               )}
-            </div>
+            </>
           )}
         </div>
       </div>
