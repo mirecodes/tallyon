@@ -24,14 +24,14 @@ interface FormRow {
 
 const CATEGORY_OPTIONS = [
   'Groceries',
-  'Food & Dining',
+  'Food',
   'Transport',
-  'Housing & Utilities',
+  'Housing',
   'Subscriptions',
-  'Education & Books',
+  'Education',
   'Shopping',
-  'Health & Personal',
-  'Leisure & Travel',
+  'Health',
+  'Travel',
   'Other',
 ];
 
