@@ -1,6 +1,6 @@
 import {
-  Bus,
-  Coffee,
+  Train,
+  Shirt,
   Utensils,
   Repeat,
   Landmark,
@@ -10,6 +10,7 @@ import {
   Plane,
   GraduationCap,
   Tag,
+  Gift,
 } from 'lucide-react';
 import React from 'react';
 import { supabase, isSupabaseConfigured, ensureAuthUser } from '../services/supabase';
@@ -200,9 +201,10 @@ export function getCategoryColor(categoryName: string, categories: CategoryDefin
 
 /**
  * Return matching Lucide Icon element accurately matched to each category meaning.
- * - Transport: Bus (대중교통/교통편)
- * - Living: Coffee (생활/일상)
+ * - Transport: Train (기차/대중교통/교통편)
+ * - Living: Shirt (의류/생활/일상)
  * - Food: Utensils (식비/외식)
+ * - Gift: Gift (선물/선물상자)
  * - Subscriptions: Repeat (정기구독/반복결제)
  * - Administration: Landmark (공공기관/행정/관공서)
  * - Housing: Home (주거/월세/주택)
@@ -215,11 +217,14 @@ export function getCategoryColor(categoryName: string, categories: CategoryDefin
 export function getCategoryIconElement(categoryName: string, size = 15) {
   const lower = categoryName.toLowerCase();
 
-  if (lower.includes('trans') || lower.includes('교통') || lower.includes('bus') || lower.includes('metro')) {
-    return <Bus size={size} />;
+  if (lower.includes('trans') || lower.includes('교통') || lower.includes('train') || lower.includes('rail') || lower.includes('bus') || lower.includes('metro')) {
+    return <Train size={size} />;
   }
-  if (lower.includes('liv') || lower.includes('생활') || lower.includes('cafe') || lower.includes('coffee')) {
-    return <Coffee size={size} />;
+  if (lower.includes('liv') || lower.includes('생활') || lower.includes('cloth') || lower.includes('shirt') || lower.includes('wear') || lower.includes('cafe') || lower.includes('coffee')) {
+    return <Shirt size={size} />;
+  }
+  if (lower.includes('gift') || lower.includes('선물') || lower.includes('present')) {
+    return <Gift size={size} />;
   }
   if (lower.includes('food') || lower.includes('음식') || lower.includes('meal') || lower.includes('dine') || lower.includes('eat')) {
     return <Utensils size={size} />;
