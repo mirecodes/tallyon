@@ -72,6 +72,17 @@ export interface MonthlyBudget {
   updatedAt: string;
 }
 
+export interface CumulativeBudgetInfo {
+  startYearMonth: string;             // Starting aggregation month (e.g. "2026-01")
+  currentYearMonth: string;           // Ending month (e.g. "2026-09")
+  monthsCount: number;                // Number of months aggregated
+  totalCumulativeBudget: number;      // Sum of budgets across the months in targetCurrency
+  totalActualSpent: number;           // Actual expenditure over the range in targetCurrency
+  remainingOrOverAmount: number;      // totalCumulativeBudget - totalActualSpent
+  isOverBudget: boolean;              // true if totalActualSpent > totalCumulativeBudget
+  percentageUsed: number;             // Math.round((totalActualSpent / totalCumulativeBudget) * 100)
+}
+
 // 7. Repository Contracts
 export interface ITransactionRepository {
   create(transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>): Promise<Transaction>;

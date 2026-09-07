@@ -11,7 +11,7 @@ const SEED_TRANSACTIONS: Array<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt
     transactionTime: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
     originalAmount: 46.50,
     originalCurrency: 'CHF',
-    category: 'Groceries',
+    category: 'Living',
     expenseNature: 'ONE_OFF',
   },
   {
@@ -42,19 +42,19 @@ const SEED_TRANSACTIONS: Array<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt
     isFixed: true,
   },
   {
-    description: 'Kyobo Books Technical Books (Korea)',
+    description: 'Official Document Processing & Translation',
     transactionTime: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
     originalAmount: 78000,
     originalCurrency: 'KRW',
-    category: 'Education',
+    category: 'Administration',
     expenseNature: 'ONE_OFF',
   },
   {
-    description: 'IEEE Robotics Society Annual Membership',
+    description: 'Annual Health Checkup & Dental Clinic',
     transactionTime: new Date(Date.now() - 8 * 24 * 3600 * 1000).toISOString(),
     originalAmount: 125.00,
     originalCurrency: 'USD',
-    category: 'Education',
+    category: 'Health',
     expenseNature: 'RECURRING_YEARLY',
   },
   {

@@ -1,7 +1,7 @@
 import React from 'react';
-import type { TargetCurrency, AnalyticsBreakdown } from '../types';
+import type { TargetCurrency, AnalyticsBreakdown, CumulativeBudgetInfo } from '../types';
 import { formatCurrency } from '../utils/currency';
-import { Calendar, ChevronRight } from 'lucide-react';
+import { Calendar, ChevronRight, TrendingDown, TrendingUp } from 'lucide-react';
 
 interface MetricCardsProps {
   breakdown: AnalyticsBreakdown;
@@ -11,6 +11,8 @@ interface MetricCardsProps {
   fixedBudget?: number;
   flexibleBudget?: number;
   onGoToBudget?: () => void;
+  isAllView?: boolean;
+  cumulativeBudgetInfo?: CumulativeBudgetInfo;
 }
 
 export const MetricCards: React.FC<MetricCardsProps> = ({
@@ -21,6 +23,8 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   fixedBudget: customFixedBudget,
   flexibleBudget: customFlexibleBudget,
   onGoToBudget,
+  isAllView = false,
+  cumulativeBudgetInfo,
 }) => {
   // Configured monthly budget or standard default
   const totalBudget =
@@ -45,15 +49,20 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       ? customFlexibleBudget
       : Math.max(0, totalBudget - fixedBudget);
 
+  // In ALL view, totalBudget is the cumulative budget from start month to current month
+  const activeBudget = isAllView && cumulativeBudgetInfo
+    ? cumulativeBudgetInfo.totalCumulativeBudget
+    : totalBudget;
+
   // Spent amounts
   const fixedSpent = breakdown.fixedTotal;
   const flexibleSpent = breakdown.flexibleTotal;
   const totalSpent = breakdown.grandTotal;
 
-  // Percentages relative to total budget
-  const fixedPct = totalBudget > 0 ? (fixedSpent / totalBudget) * 100 : 0;
-  const flexiblePct = totalBudget > 0 ? (flexibleSpent / totalBudget) * 100 : 0;
-  const totalUsagePct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+  // Percentages relative to active budget
+  const fixedPct = activeBudget > 0 ? (fixedSpent / activeBudget) * 100 : 0;
+  const flexiblePct = activeBudget > 0 ? (flexibleSpent / activeBudget) * 100 : 0;
+  const totalUsagePct = activeBudget > 0 ? Math.round((totalSpent / activeBudget) * 100) : 0;
 
   // Flexible budget internal usage percentage
   const flexibleQuotaUsagePct =
@@ -70,7 +79,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)',
       }}
     >
-      {/* 1. Header Row: Total Expenditure & Monthly Budget Button */}
+      {/* 1. Header Row: Total Expenditure & Monthly / Cumulative Budget */}
       <div
         style={{
           display: 'flex',
@@ -91,7 +100,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               letterSpacing: '0.04em',
             }}
           >
-            Total Expenditure
+            {isAllView ? 'Total Expenditure (All Time)' : 'Total Expenditure'}
           </span>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginTop: 4, flexWrap: 'wrap' }}>
             <span
@@ -107,13 +116,55 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               {formatCurrency(totalSpent, targetCurrency)}
             </span>
             <span style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)' }}>
-              of <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(totalBudget, targetCurrency)}</strong>{' '}
-              monthly budget ({totalUsagePct}%)
+              of <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(activeBudget, targetCurrency)}</strong>{' '}
+              {isAllView && cumulativeBudgetInfo
+                ? `cumulative budget (${cumulativeBudgetInfo.startYearMonth} ~ ${cumulativeBudgetInfo.currentYearMonth}, ${totalUsagePct}%)`
+                : `monthly budget (${totalUsagePct}%)`}
             </span>
           </div>
+
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
-            {totalTransactionsCount} recorded items this month
+            {totalTransactionsCount} {isAllView ? 'total recorded items across period' : 'recorded items this month'}
           </div>
+
+          {/* Cumulative Budget Over / Under indicator tag ONLY in ALL mode */}
+          {isAllView && cumulativeBudgetInfo && (
+            <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: '0.8125rem',
+                  fontWeight: 700,
+                  backgroundColor: cumulativeBudgetInfo.isOverBudget
+                    ? 'var(--expense-bg)'
+                    : 'var(--income-bg)',
+                  color: cumulativeBudgetInfo.isOverBudget
+                    ? 'var(--expense-rose)'
+                    : 'var(--income-emerald)',
+                }}
+              >
+                {cumulativeBudgetInfo.isOverBudget ? (
+                  <>
+                    <TrendingUp size={14} />
+                    <span>Over Budget by {formatCurrency(Math.abs(cumulativeBudgetInfo.remainingOrOverAmount), targetCurrency)}</span>
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown size={14} />
+                    <span>Under Budget (Surplus) by {formatCurrency(cumulativeBudgetInfo.remainingOrOverAmount, targetCurrency)}</span>
+                  </>
+                )}
+              </span>
+
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Aggregated {cumulativeBudgetInfo.monthsCount} months from {cumulativeBudgetInfo.startYearMonth} to {cumulativeBudgetInfo.currentYearMonth}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Quick Budget Jump Button */}
@@ -185,92 +236,132 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           borderTop: '1px solid var(--border-light)',
         }}
       >
-        {/* Fixed Commitments (Red) */}
+        {/* Fixed Commitments */}
         <div
           style={{
-            padding: '12px 16px',
-            borderRadius: 10,
+            padding: '14px 18px 14px 14px',
+            borderRadius: 14,
             backgroundColor: 'var(--bg-secondary)',
-            borderLeft: '4px solid var(--expense-rose)',
+            border: '1px solid var(--border-light)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: '1rem',
+            position: 'relative',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
           }}
         >
-          <div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-              Fixed Expenses
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Color Indicator Vertical Tape / Stripe */}
             <div
-              className="tabular-nums"
               style={{
-                fontSize: '1.25rem',
-                fontWeight: 800,
-                marginTop: 2,
-                color: 'var(--expense-rose)',
+                width: 4,
+                height: 38,
+                borderRadius: 9999,
+                backgroundColor: 'var(--expense-rose)',
+                flexShrink: 0,
               }}
-            >
-              {formatCurrency(fixedSpent, targetCurrency)}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
-              {totalSpent > 0 ? Math.round((fixedSpent / totalSpent) * 100) : 0}% of total spent
+            />
+
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                Fixed Expenses
+              </div>
+              <div
+                className="tabular-nums"
+                style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 800,
+                  marginTop: 1,
+                  color: 'var(--text-primary)',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {formatCurrency(fixedSpent, targetCurrency)}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                {totalSpent > 0 ? Math.round((fixedSpent / totalSpent) * 100) : 0}% of total spent
+              </div>
             </div>
           </div>
+
           <span
             style={{
-              padding: '4px 8px',
-              borderRadius: 6,
+              padding: '5px 12px',
+              borderRadius: '9999px',
               backgroundColor: 'var(--expense-bg)',
               color: 'var(--expense-rose)',
               fontSize: '0.6875rem',
               fontWeight: 700,
+              whiteSpace: 'nowrap',
+              border: '1px solid rgba(225, 29, 72, 0.12)',
             }}
           >
             Fixed Commitments
           </span>
         </div>
 
-        {/* Flexible Spending (Green) */}
+        {/* Flexible Spending */}
         <div
           style={{
-            padding: '12px 16px',
-            borderRadius: 10,
+            padding: '14px 18px 14px 14px',
+            borderRadius: 14,
             backgroundColor: 'var(--bg-secondary)',
-            borderLeft: '4px solid var(--income-emerald)',
+            border: '1px solid var(--border-light)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: '1rem',
+            position: 'relative',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
           }}
         >
-          <div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-              Flexible Spending
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Color Indicator Vertical Tape / Stripe */}
             <div
-              className="tabular-nums"
               style={{
-                fontSize: '1.25rem',
-                fontWeight: 800,
-                marginTop: 2,
-                color: 'var(--income-emerald)',
+                width: 4,
+                height: 38,
+                borderRadius: 9999,
+                backgroundColor: 'var(--income-emerald)',
+                flexShrink: 0,
               }}
-            >
-              {formatCurrency(flexibleSpent, targetCurrency)}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
-              {flexibleBudget > 0
-                ? `${formatCurrency(Math.max(0, flexibleBudget - flexibleSpent), targetCurrency)} left (${flexibleQuotaUsagePct}% used)`
-                : `${totalSpent > 0 ? Math.round((flexibleSpent / totalSpent) * 100) : 0}% of total spent`}
+            />
+
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                Flexible Spending
+              </div>
+              <div
+                className="tabular-nums"
+                style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 800,
+                  marginTop: 1,
+                  color: 'var(--income-emerald)',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {formatCurrency(flexibleSpent, targetCurrency)}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                {flexibleBudget > 0
+                  ? `${formatCurrency(Math.max(0, flexibleBudget - flexibleSpent), targetCurrency)} left (${flexibleQuotaUsagePct}% used)`
+                  : `${totalSpent > 0 ? Math.round((flexibleSpent / totalSpent) * 100) : 0}% of total spent`}
+              </div>
             </div>
           </div>
+
           <span
             style={{
-              padding: '4px 8px',
-              borderRadius: 6,
+              padding: '5px 12px',
+              borderRadius: '9999px',
               backgroundColor: 'var(--income-bg)',
               color: 'var(--income-emerald)',
               fontSize: '0.6875rem',
               fontWeight: 700,
+              whiteSpace: 'nowrap',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
             }}
           >
             Flexible Budget
