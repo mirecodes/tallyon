@@ -14,7 +14,7 @@ interface BreakdownAnalyticsViewProps {
 
 const NATURE_CONFIG = {
   RECURRING_YEARLY: {
-    label: 'Yearly Commitments',
+    label: 'Long-term Commitments',
     color: '#1E3A8A', // Deep Dark Navy Blue (Blue-900)
     bg: '#EFF6FF',
   },
@@ -294,7 +294,7 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
         )}
       </div>
 
-      {/* 2. Nature Breakdown Stacked Graph (Against Total Budget) */}
+      {/* 2. Cycle Breakdown Stacked Graph (Against Total Budget) */}
       <div
         style={{
           paddingTop: '1.5rem',
@@ -314,8 +314,8 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
           <div>
             <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               {isAllView && cumulativeBudgetInfo
-                ? `Expense Nature vs Cumulative Budget (${cumulativeBudgetInfo.startYearMonth} ~ ${cumulativeBudgetInfo.currentYearMonth})`
-                : 'Expense Nature vs Monthly Budget'}
+                ? `Expense Cycle vs Cumulative Budget (${cumulativeBudgetInfo.startYearMonth} ~ ${cumulativeBudgetInfo.currentYearMonth})`
+                : 'Expense Cycle vs Monthly Budget'}
             </span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 8 }}>
               ({formatCurrency(totalNatureSpent, targetCurrency)} of {formatCurrency(totalBudget, targetCurrency)} budget used • {totalNatureBudgetPct}%)
@@ -341,7 +341,7 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
           )}
         </div>
 
-        {/* Multi-Colored Stacked Progress Bar Against Budget: Yearly -> Monthly -> One-off (gradient from deep to light blue) */}
+        {/* Multi-Colored Stacked Progress Bar Against Budget: Long-term -> Monthly -> One-off (gradient from deep to light blue) */}
         <div
           style={{
             width: '100%',
@@ -353,7 +353,7 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
             marginBottom: '1rem',
           }}
         >
-          {/* Yearly Commitments (Dark Blue) */}
+          {/* Long-term Commitments (Dark Blue) */}
           <div
             style={{
               width: `${Math.min(100, yearlyBudgetPct)}%`,
@@ -361,7 +361,7 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
               backgroundColor: NATURE_CONFIG.RECURRING_YEARLY.color,
               transition: 'width 0.4s ease',
             }}
-            title={`Yearly Commitments: ${formatCurrency(yearlyAmount, targetCurrency)} (${yearlyBudgetPct.toFixed(1)}% of budget)`}
+            title={`Long-term Commitments: ${formatCurrency(yearlyAmount, targetCurrency)} (${yearlyBudgetPct.toFixed(1)}% of budget)`}
           />
           {/* Monthly Commitments (Medium Blue) */}
           <div
@@ -385,32 +385,34 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
           />
         </div>
 
-        {/* Nature Breakdown Items Cards: Yearly -> Monthly -> One-off */}
+        {/* Cycle Breakdown Items Cards: Long-term -> Monthly -> One-off (Height & padding matching Fixed/Flexible cards) */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '0.875rem',
+            gap: '1rem',
           }}
         >
-          {/* 1. Yearly Commitments */}
+          {/* 1. Long-term Commitments */}
           <div
             style={{
-              padding: '12px 14px 12px 12px',
+              padding: '14px 18px 14px 14px',
               borderRadius: 14,
               backgroundColor: 'var(--bg-secondary)',
               border: '1px solid var(--border-light)',
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              minHeight: 88,
+              boxSizing: 'border-box',
             }}
           >
             {/* Color Indicator Vertical Tape / Stripe */}
             <div
               style={{
                 width: 4,
-                height: 34,
+                height: 38,
                 borderRadius: 9999,
                 backgroundColor: NATURE_CONFIG.RECURRING_YEARLY.color,
                 flexShrink: 0,
@@ -436,7 +438,7 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
               <div
                 className="tabular-nums"
                 style={{
-                  fontSize: '1.0625rem',
+                  fontSize: '1.25rem',
                   fontWeight: 800,
                   color: 'var(--text-primary)',
                   marginTop: 1,
@@ -445,27 +447,32 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
               >
                 {formatCurrency(yearlyAmount, targetCurrency)}
               </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                {totalNatureSpent > 0 ? Math.round((yearlyAmount / totalNatureSpent) * 100) : 0}% of cycle spent
+              </div>
             </div>
           </div>
 
           {/* 2. Monthly Commitments */}
           <div
             style={{
-              padding: '12px 14px 12px 12px',
+              padding: '14px 18px 14px 14px',
               borderRadius: 14,
               backgroundColor: 'var(--bg-secondary)',
               border: '1px solid var(--border-light)',
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              minHeight: 88,
+              boxSizing: 'border-box',
             }}
           >
             {/* Color Indicator Vertical Tape / Stripe */}
             <div
               style={{
                 width: 4,
-                height: 34,
+                height: 38,
                 borderRadius: 9999,
                 backgroundColor: NATURE_CONFIG.RECURRING_MONTHLY.color,
                 flexShrink: 0,
@@ -491,7 +498,7 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
               <div
                 className="tabular-nums"
                 style={{
-                  fontSize: '1.0625rem',
+                  fontSize: '1.25rem',
                   fontWeight: 800,
                   color: 'var(--text-primary)',
                   marginTop: 1,
@@ -500,27 +507,32 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
               >
                 {formatCurrency(monthlyAmount, targetCurrency)}
               </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                {totalNatureSpent > 0 ? Math.round((monthlyAmount / totalNatureSpent) * 100) : 0}% of cycle spent
+              </div>
             </div>
           </div>
 
           {/* 3. One-off Expenses */}
           <div
             style={{
-              padding: '12px 14px 12px 12px',
+              padding: '14px 18px 14px 14px',
               borderRadius: 14,
               backgroundColor: 'var(--bg-secondary)',
               border: '1px solid var(--border-light)',
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+              minHeight: 88,
+              boxSizing: 'border-box',
             }}
           >
             {/* Color Indicator Vertical Tape / Stripe */}
             <div
               style={{
                 width: 4,
-                height: 34,
+                height: 38,
                 borderRadius: 9999,
                 backgroundColor: NATURE_CONFIG.ONE_OFF.color,
                 flexShrink: 0,
@@ -546,7 +558,7 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
               <div
                 className="tabular-nums"
                 style={{
-                  fontSize: '1.0625rem',
+                  fontSize: '1.25rem',
                   fontWeight: 800,
                   color: 'var(--text-primary)',
                   marginTop: 1,
@@ -554,6 +566,9 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
                 }}
               >
                 {formatCurrency(oneOffAmount, targetCurrency)}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                {totalNatureSpent > 0 ? Math.round((oneOffAmount / totalNatureSpent) * 100) : 0}% of cycle spent
               </div>
             </div>
           </div>

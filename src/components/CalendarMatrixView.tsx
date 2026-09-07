@@ -456,7 +456,7 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                             ? 'One-off'
                             : tx.expenseNature === 'RECURRING_MONTHLY'
                             ? 'Monthly'
-                            : 'Yearly'}
+                            : 'Long-term'}
                         </span>
                       </div>
                     </div>
