@@ -216,14 +216,15 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
               </div>
             </div>
 
-            {/* Right: Adaptive 2-Column Category Legend Grid */}
+            {/* Right: Borderless Clean Category Legend Grid (1 col for <=5, 2 cols for >5) */}
             <div
               style={{
                 flex: 1,
                 minWidth: 280,
                 display: 'grid',
-                gridTemplateColumns: displayCategories.length > 4 ? 'repeat(auto-fill, minmax(200px, 1fr))' : '1fr',
-                gap: '0.625rem',
+                gridTemplateColumns: displayCategories.length > 5 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+                columnGap: '1.5rem',
+                rowGap: '0.625rem',
               }}
             >
               {displayCategories.map((item, idx) => {
@@ -235,20 +236,17 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '8px 12px',
-                      borderRadius: 8,
-                      backgroundColor: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-light)',
+                      padding: '4px 0',
                       fontSize: '0.8125rem',
                       gap: 8,
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
                       <div
                         style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: 2,
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
                           backgroundColor: color,
                           flexShrink: 0,
                         }}
