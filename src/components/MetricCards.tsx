@@ -14,8 +14,15 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   targetCurrency,
   totalTransactionsCount,
 }) => {
-  // Estimated monthly budget for illustration (can be customized or default to 2000 CHF or 3,000,000 KRW)
-  const monthlyBudget = targetCurrency === 'CHF' ? 2000 : 3000000;
+  // Estimated monthly budget for illustration across currencies
+  const monthlyBudget =
+    targetCurrency === 'CHF'
+      ? 2000
+      : targetCurrency === 'USD'
+      ? 2200
+      : targetCurrency === 'EUR'
+      ? 2100
+      : 3000000;
   const budgetUsagePercent = Math.min(
     100,
     Math.round((breakdown.grandTotal / monthlyBudget) * 100)

@@ -1,6 +1,6 @@
 // 1. Core Union Types
 export type CurrencyCode = 'CHF' | 'USD' | 'EUR' | 'KRW';
-export type TargetCurrency = 'CHF' | 'KRW';
+export type TargetCurrency = CurrencyCode;
 export type ExpenseNature = 'ONE_OFF' | 'RECURRING_MONTHLY' | 'RECURRING_YEARLY';
 
 // 2. Domain Entity: Transaction

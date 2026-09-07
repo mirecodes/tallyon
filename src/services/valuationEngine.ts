@@ -60,8 +60,8 @@ export function evaluateTransactions(
     if (targetCurrency === 'KRW') {
       convertedAmount = Math.round(amountKrw);
     } else {
-      const chfToKrw = rates['CHF'] || STATIC_FALLBACK_RATES.rates['CHF'];
-      convertedAmount = Number((amountKrw / chfToKrw).toFixed(2));
+      const targetToKrw = rates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1;
+      convertedAmount = Number((amountKrw / targetToKrw).toFixed(2));
     }
 
     const valuated: ValuatedTransaction = {

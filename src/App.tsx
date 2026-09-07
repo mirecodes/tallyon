@@ -5,7 +5,8 @@ import { useExchangeRates } from './hooks/useExchangeRates';
 import { useValuationEngine } from './hooks/useValuationEngine';
 
 import { Header } from './components/Header';
-import { ActionBar } from './components/ActionBar';
+import { CurrencySelector } from './components/CurrencySelector';
+import { FloatingAddButton } from './components/FloatingAddButton';
 import { MetricCards } from './components/MetricCards';
 import { CalendarMatrixView } from './components/CalendarMatrixView';
 import { FilteredListView } from './components/FilteredListView';
@@ -57,13 +58,12 @@ export const App: React.FC = () => {
       />
 
       {/* Main Container */}
-      <main style={{ flex: 1, paddingTop: '1.5rem', paddingBottom: '3rem' }}>
+      <main style={{ flex: 1, paddingTop: '1.25rem', paddingBottom: '3rem' }}>
         <div className="container">
-          {/* Functional Actions Bar: Currency toggle & Add Expense */}
-          <ActionBar
+          {/* Top-Right Small Currency Selector (Under Navigation Bar) */}
+          <CurrencySelector
             targetCurrency={targetCurrency}
             setTargetCurrency={setTargetCurrency}
-            onOpenNewModal={handleOpenAddModal}
           />
 
           {/* Always Display Key Metric KPI Overview */}
@@ -127,6 +127,9 @@ export const App: React.FC = () => {
           Tallyon Multi-Currency Expense Tracker • Built with React 19, TypeScript & Repository Architecture
         </div>
       </footer>
+
+      {/* Floating Pencil Add Expense Button (Bottom-Right) */}
+      <FloatingAddButton onClick={handleOpenAddModal} />
 
       {/* Expense Add / Edit Modal */}
       <ExpenseModal
