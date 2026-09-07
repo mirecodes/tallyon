@@ -356,6 +356,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   backgroundColor: rows[0].isFixed ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
                   border: rows[0].isFixed ? '1px solid var(--primary-blue-tint)' : '1px solid var(--border-light)',
                   cursor: 'pointer',
+                  userSelect: 'none',
                   transition: 'all 0.15s ease',
                 }}
                 onClick={() => handleRowChange(0, 'isFixed', !rows[0].isFixed)}
@@ -364,18 +365,17 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   type="checkbox"
                   id="fixed-expense-chk"
                   checked={rows[0].isFixed}
-                  onChange={(e) => handleRowChange(0, 'isFixed', e.target.checked)}
-                  style={{ marginTop: 3, cursor: 'pointer' }}
-                  onClick={(e) => e.stopPropagation()}
+                  onChange={() => {}} // Controlled via container onClick
+                  style={{ marginTop: 3, cursor: 'pointer', pointerEvents: 'none' }}
                 />
-                <label htmlFor="fixed-expense-chk" style={{ cursor: 'pointer', fontSize: '0.8125rem' }}>
+                <div style={{ cursor: 'pointer', fontSize: '0.8125rem' }}>
                   <span style={{ fontWeight: 700, color: rows[0].isFixed ? 'var(--primary-blue)' : 'var(--text-primary)' }}>
                     Fixed Recurring Expense
                   </span>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
                     When enabled, this monthly commitment automatically carries over to all subsequent months as a planned fixed expense.
                   </div>
-                </label>
+                </div>
               </div>
 
               {/* Date & Time */}

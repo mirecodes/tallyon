@@ -121,7 +121,11 @@ export const App: React.FC = () => {
     id: string,
     updates: Partial<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>>
   ) => {
-    await editTransaction(id, updates);
+    // If updating a projected recurring transaction (e.g. id = fixed-{originId}-{month}),
+    // find target transaction via parentFixedId or editingTx
+    const targetTx = transactions.find((t) => t.id === id);
+    const targetId = targetTx ? targetTx.id : editingTx?.parentFixedId || id.replace(/^fixed-/, '').replace(/-[0-9]{4}-[0-9]{2}$/, '');
+    await editTransaction(targetId, updates);
   };
 
   // Handler to stop or delete a recurring fixed expense starting from selectedYearMonth onward
