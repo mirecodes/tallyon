@@ -10,6 +10,8 @@ interface BudgetPlanningViewProps {
   ratesMap: Record<string, ExchangeRateRecord>;
   targetCurrency: TargetCurrency;
   breakdown: AnalyticsBreakdown;
+  selectedYearMonth?: string;
+  onMonthChange?: (ym: string) => void;
 }
 
 const CATEGORIES = [
@@ -31,12 +33,21 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
   ratesMap,
   targetCurrency,
   breakdown,
+  selectedYearMonth: externalYearMonth,
+  onMonthChange,
 }) => {
   // Current month state YYYY-MM
   const now = new Date();
-  const [selectedYearMonth, setSelectedYearMonth] = useState<string>(
-    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  );
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [internalYearMonth, setInternalYearMonth] = useState<string>(currentYM);
+
+  const selectedYearMonth =
+    externalYearMonth && externalYearMonth !== 'ALL' ? externalYearMonth : internalYearMonth;
+
+  const setSelectedYearMonth = (ym: string) => {
+    setInternalYearMonth(ym);
+    onMonthChange?.(ym);
+  };
 
   const [savedNotice, setSavedNotice] = useState(false);
 

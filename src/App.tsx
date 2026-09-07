@@ -6,7 +6,7 @@ import { useValuationEngine } from './hooks/useValuationEngine';
 import { useBudgets } from './hooks/useBudgets';
 
 import { Header } from './components/Header';
-import { CurrencySelector } from './components/CurrencySelector';
+import { ControlBar } from './components/ControlBar';
 import { FloatingAddButton } from './components/FloatingAddButton';
 import { MetricCards } from './components/MetricCards';
 import { CalendarMatrixView } from './components/CalendarMatrixView';
@@ -15,6 +15,7 @@ import { BreakdownAnalyticsView } from './components/BreakdownAnalyticsView';
 import { BudgetPlanningView } from './components/BudgetPlanningView';
 import { ExpenseModal } from './components/ExpenseModal';
 import { STATIC_FALLBACK_RATES } from './repositories/LocalStorageExchangeRateRepository';
+import { toLocalDateString } from './utils/currency';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'transactions' | 'analytics' | 'budget'>('dashboard');
@@ -22,14 +23,30 @@ export const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
+  // Global Month Filter: YYYY-MM (e.g. "2026-09") or "ALL"
+  const now = new Date();
+  const defaultYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [selectedYearMonth, setSelectedYearMonth] = useState<string>(defaultYM);
+
   // Hook 1: Data storage layer
   const { transactions, addTransactionsBatch, editTransaction, removeTransaction } = useTransactions();
 
   // Hook 2: Exchange rates sync and prefetching
   const { ratesMap } = useExchangeRates(transactions);
 
-  // Hook 3: Real-time dynamic valuation engine
-  const { valuatedList, calendarMap, breakdown } = useValuationEngine(transactions, ratesMap, targetCurrency);
+  // Filter transactions by selected month (unless ALL is selected)
+  const scopedTransactions = React.useMemo(() => {
+    if (selectedYearMonth === 'ALL') {
+      return transactions;
+    }
+    return transactions.filter((tx) => {
+      const txLocalDate = toLocalDateString(tx.transactionTime);
+      return txLocalDate.startsWith(selectedYearMonth);
+    });
+  }, [transactions, selectedYearMonth]);
+
+  // Hook 3: Real-time dynamic valuation engine on scoped transactions
+  const { valuatedList, calendarMap, breakdown } = useValuationEngine(scopedTransactions, ratesMap, targetCurrency);
 
   // Hook 4: Budget planning storage
   const { budgetsMap, updateBudget } = useBudgets();
@@ -55,11 +72,10 @@ export const App: React.FC = () => {
     await editTransaction(id, updates);
   };
 
-  // Compute current month's budget in targetCurrency
-  const now = new Date();
-  const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const currentBudgetRecord = budgetsMap[currentYearMonth];
-  const rateRecord = ratesMap[`${currentYearMonth}-01`] || ratesMap[Object.keys(ratesMap)[0]] || STATIC_FALLBACK_RATES;
+  // Compute selected month's budget in targetCurrency
+  const activeYM = selectedYearMonth === 'ALL' ? defaultYM : selectedYearMonth;
+  const currentBudgetRecord = budgetsMap[activeYM];
+  const rateRecord = ratesMap[`${activeYM}-01`] || ratesMap[Object.keys(ratesMap)[0]] || STATIC_FALLBACK_RATES;
   const rates = rateRecord.rates;
 
   let currentMonthlyBudgetInTarget: number | undefined = undefined;
@@ -85,8 +101,10 @@ export const App: React.FC = () => {
       {/* Main Container */}
       <main style={{ flex: 1, paddingTop: '1.25rem', paddingBottom: '3rem' }}>
         <div className="container">
-          {/* Top-Right Small Currency Selector (Under Navigation Bar) */}
-          <CurrencySelector
+          {/* Top Control Bar: Month Navigator (Prev/Next/This Month/All) & Currency Selector */}
+          <ControlBar
+            selectedYearMonth={selectedYearMonth}
+            setSelectedYearMonth={setSelectedYearMonth}
             targetCurrency={targetCurrency}
             setTargetCurrency={setTargetCurrency}
           />
@@ -95,7 +113,7 @@ export const App: React.FC = () => {
           <MetricCards
             breakdown={breakdown}
             targetCurrency={targetCurrency}
-            totalTransactionsCount={transactions.length}
+            totalTransactionsCount={scopedTransactions.length}
             monthlyBudget={currentMonthlyBudgetInTarget}
             onGoToBudget={() => setActiveTab('budget')}
           />
@@ -121,6 +139,8 @@ export const App: React.FC = () => {
               calendarMap={calendarMap}
               targetCurrency={targetCurrency}
               onSelectTransaction={handleOpenEditModal}
+              selectedYearMonth={selectedYearMonth}
+              onMonthChange={setSelectedYearMonth}
             />
           )}
 
@@ -144,6 +164,8 @@ export const App: React.FC = () => {
               ratesMap={ratesMap}
               targetCurrency={targetCurrency}
               breakdown={breakdown}
+              selectedYearMonth={selectedYearMonth}
+              onMonthChange={setSelectedYearMonth}
             />
           )}
         </div>
