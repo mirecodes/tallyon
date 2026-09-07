@@ -580,7 +580,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   >
                     <option value="ONE_OFF">One-off</option>
                     <option value="RECURRING_MONTHLY">Monthly</option>
-                    <option value="RECURRING_YEARLY">Yearly</option>
+                    <option value="RECURRING_YEARLY">Long-term</option>
                   </select>
                 </div>
               </div>
@@ -780,7 +780,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                         >
                           <option value="ONE_OFF">One-off</option>
                           <option value="RECURRING_MONTHLY">Monthly</option>
-                          <option value="RECURRING_YEARLY">Yearly</option>
+                          <option value="RECURRING_YEARLY">Long-term</option>
                         </select>
                       </td>
                       <td style={{ padding: '6px 4px', textAlign: 'center' }}>

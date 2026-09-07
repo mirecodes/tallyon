@@ -171,15 +171,15 @@ export const FilteredListView: React.FC<FilteredListViewProps> = ({
 
         {/* Filters Row */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {/* Nature Filters */}
+          {/* Cycle Filters */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', width: 64 }}>
-              NATURE:
+              CYCLE:
             </span>
             {(['ONE_OFF', 'RECURRING_MONTHLY', 'RECURRING_YEARLY'] as ExpenseNature[]).map((nature) => {
               const active = selectedNatures.includes(nature);
               const label =
-                nature === 'ONE_OFF' ? 'One-off' : nature === 'RECURRING_MONTHLY' ? 'Monthly' : 'Yearly';
+                nature === 'ONE_OFF' ? 'One-off' : nature === 'RECURRING_MONTHLY' ? 'Monthly' : 'Long-term';
               return (
                 <button
                   key={nature}
@@ -658,7 +658,7 @@ export const FilteredListView: React.FC<FilteredListViewProps> = ({
                           ? 'One-off'
                           : tx.expenseNature === 'RECURRING_MONTHLY'
                           ? 'Monthly'
-                          : 'Yearly'}
+                          : 'Long-term'}
                       </span>
                     )}
                   </div>
