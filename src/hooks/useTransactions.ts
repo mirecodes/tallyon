@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Transaction, ITransactionRepository } from '../types';
-import { LocalStorageTransactionRepository } from '../repositories/LocalStorageTransactionRepository';
+import { SupabaseTransactionRepository } from '../repositories/SupabaseTransactionRepository';
 
 export function useTransactions(repo?: ITransactionRepository) {
-  const repository = useMemo(() => repo || new LocalStorageTransactionRepository(), [repo]);
+  const repository = useMemo(() => repo || new SupabaseTransactionRepository(), [repo]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

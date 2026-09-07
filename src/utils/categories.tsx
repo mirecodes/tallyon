@@ -12,6 +12,7 @@ import {
   Tag,
 } from 'lucide-react';
 import React from 'react';
+import { supabase, isSupabaseConfigured, ensureAuthUser } from '../services/supabase';
 
 export interface CategoryDefinition {
   id: string;            // Key / value saved in transaction (English)
@@ -74,7 +75,7 @@ export function getSavedCategories(): CategoryDefinition[] {
 }
 
 /**
- * Persist categories to LocalStorage and trigger window event for cross-component reactivity.
+ * Persist categories to LocalStorage and sync to Supabase user_categories table if configured.
  */
 export function saveCategories(categories: CategoryDefinition[]): void {
   try {
@@ -82,6 +83,26 @@ export function saveCategories(categories: CategoryDefinition[]): void {
     window.dispatchEvent(new Event('categories-changed'));
   } catch (err) {
     console.error('Failed to save categories to storage:', err);
+  }
+
+  // Background sync to Supabase user_categories
+  const client = supabase;
+  if (isSupabaseConfigured && client) {
+    ensureAuthUser().then(async (userId) => {
+      const rows = categories.map((cat, index) => ({
+        user_id: userId,
+        category_id: cat.id,
+        name: cat.name,
+        color: cat.color,
+        bg_color: cat.bgColor,
+        sort_order: index,
+        updated_at: new Date().toISOString(),
+      }));
+
+      await client
+        .from('user_categories')
+        .upsert(rows, { onConflict: 'user_id, category_id' });
+    }).catch(() => {});
   }
 }
 
@@ -96,6 +117,30 @@ export function useCategories() {
       setCategories(getSavedCategories());
     };
     window.addEventListener('categories-changed', handler);
+
+    // Initial sync check from Supabase user_categories
+    const client = supabase;
+    if (isSupabaseConfigured && client) {
+      ensureAuthUser().then(async (userId) => {
+        const { data, error } = await client
+          .from('user_categories')
+          .select('*')
+          .eq('user_id', userId)
+          .order('sort_order', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          const fetchedCategories: CategoryDefinition[] = data.map((row) => ({
+            id: row.category_id,
+            name: row.name,
+            color: row.color,
+            bgColor: row.bg_color,
+          }));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(fetchedCategories));
+          setCategories(fetchedCategories);
+        }
+      }).catch(() => {});
+    }
+
     return () => window.removeEventListener('categories-changed', handler);
   }, []);
 
