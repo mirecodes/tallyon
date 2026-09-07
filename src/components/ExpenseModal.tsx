@@ -262,9 +262,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         await onSubmitBatch(batchItems);
       }
       onClose();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Submit error:', err);
-      setErrorMsg('Failed to save transaction. Please check inputs.');
+      const message = err instanceof Error ? err.message : 'Failed to save transaction. Please check inputs.';
+      setErrorMsg(message);
     }
   };
 

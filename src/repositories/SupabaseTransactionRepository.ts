@@ -154,10 +154,8 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
   }
 
   async update(id: string, updates: Partial<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Transaction> {
-    const localUpdated = await this.fallbackRepo.update(id, updates);
-
     if (!isSupabaseConfigured || !supabase) {
-      return localUpdated;
+      return this.fallbackRepo.update(id, updates);
     }
 
     try {
@@ -186,10 +184,18 @@ export class SupabaseTransactionRepository implements ITransactionRepository {
         .single();
 
       if (error) throw error;
+
+      // Also safely keep local fallback storage in sync if it exists locally
+      try {
+        await this.fallbackRepo.update(id, updates);
+      } catch {
+        // Not present in local storage, which is normal when loaded from Supabase
+      }
+
       return toDomainTransaction(data as DbTransaction);
     } catch (err) {
-      console.warn('Supabase update failed, updated in LocalStorage:', err);
-      return localUpdated;
+      console.warn('Supabase update failed, attempting LocalStorage fallback:', err);
+      return this.fallbackRepo.update(id, updates);
     }
   }
 
