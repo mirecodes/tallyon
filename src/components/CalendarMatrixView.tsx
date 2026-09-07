@@ -7,23 +7,50 @@ interface CalendarMatrixViewProps {
   calendarMap: Record<string, DailyAggregate>;
   targetCurrency: TargetCurrency;
   onSelectTransaction?: (tx: ValuatedTransaction) => void;
+  selectedYearMonth?: string;
+  onMonthChange?: (ym: string) => void;
 }
 
 export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
   calendarMap,
   targetCurrency,
   onSelectTransaction,
+  selectedYearMonth,
+  onMonthChange,
 }) => {
-  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [internalDate, setInternalDate] = useState(() => new Date());
   const [selectedDayData, setSelectedDayData] = useState<DailyAggregate | null>(null);
+
+  // Derive current viewing date from selectedYearMonth if provided
+  const currentDate = React.useMemo(() => {
+    if (selectedYearMonth && selectedYearMonth !== 'ALL') {
+      const [y, m] = selectedYearMonth.split('-');
+      return new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
+    }
+    return internalDate;
+  }, [selectedYearMonth, internalDate]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth(); // 0-indexed
 
   // Month navigation
-  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
-  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-  const goToday = () => setCurrentDate(new Date());
+  const prevMonth = () => {
+    const d = new Date(year, month - 1, 1);
+    setInternalDate(d);
+    onMonthChange?.(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  const nextMonth = () => {
+    const d = new Date(year, month + 1, 1);
+    setInternalDate(d);
+    onMonthChange?.(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  const goToday = () => {
+    const d = new Date();
+    setInternalDate(d);
+    onMonthChange?.(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
 
   // Month title format
   const monthName = currentDate.toLocaleString('en-US', { month: 'long' });
