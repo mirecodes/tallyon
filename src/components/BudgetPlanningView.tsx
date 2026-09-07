@@ -92,8 +92,36 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
       ? Math.round(budgetInKrw)
       : Number((budgetInKrw / (rates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1)).toFixed(2));
 
+  // Convert fixed and free budgets
+  const fixedInKrw =
+    rawBudget.fixedBudget !== undefined
+      ? rawBudget.currency === 'KRW'
+        ? rawBudget.fixedBudget
+        : rawBudget.fixedBudget * (rates[rawBudget.currency] || STATIC_FALLBACK_RATES.rates[rawBudget.currency])
+      : budgetInKrw * 0.45; // default 45% if unspecified
+
+  const freeInKrw =
+    rawBudget.freeBudget !== undefined
+      ? rawBudget.currency === 'KRW'
+        ? rawBudget.freeBudget
+        : rawBudget.freeBudget * (rates[rawBudget.currency] || STATIC_FALLBACK_RATES.rates[rawBudget.currency])
+      : budgetInKrw * 0.55; // default 55% if unspecified
+
+  const convertedFixedBudget =
+    targetCurrency === 'KRW'
+      ? Math.round(fixedInKrw)
+      : Number((fixedInKrw / (rates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1)).toFixed(2));
+
+  const convertedFreeBudget =
+    targetCurrency === 'KRW'
+      ? Math.round(freeInKrw)
+      : Number((freeInKrw / (rates[targetCurrency] || STATIC_FALLBACK_RATES.rates[targetCurrency] || 1)).toFixed(2));
+
   // Form input local states
   const [inputTotal, setInputTotal] = useState<string>(convertedTotalBudget.toString());
+  const [inputFixed, setInputFixed] = useState<string>(convertedFixedBudget.toString());
+  const [inputFree, setInputFree] = useState<string>(convertedFreeBudget.toString());
+
   const [categoryInputs, setCategoryInputs] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
     const catBudgets = rawBudget.categoryBudgets || {};
@@ -119,6 +147,9 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
   // Sync state whenever month or targetCurrency changes
   React.useEffect(() => {
     setInputTotal(convertedTotalBudget.toString());
+    setInputFixed(convertedFixedBudget.toString());
+    setInputFree(convertedFreeBudget.toString());
+
     const init: Record<string, string> = {};
     const catBudgets = rawBudget.categoryBudgets || {};
     for (const cat of CATEGORIES) {
@@ -147,6 +178,8 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedTotal = parseFloat(inputTotal) || 0;
+    const parsedFixed = parseFloat(inputFixed) || 0;
+    const parsedFree = parseFloat(inputFree) || Math.max(0, parsedTotal - parsedFixed);
 
     const parsedCategories: Record<string, number> = {};
     for (const [cat, valStr] of Object.entries(categoryInputs)) {
@@ -159,6 +192,8 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
     const updatedBudget: MonthlyBudget = {
       yearMonth: selectedYearMonth,
       totalBudget: parsedTotal,
+      fixedBudget: parsedFixed,
+      freeBudget: parsedFree,
       currency: targetCurrency,
       categoryBudgets: parsedCategories,
       updatedAt: new Date().toISOString(),
@@ -332,7 +367,7 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
             </button>
           </div>
 
-          {/* Overall Monthly Budget Input */}
+          {/* Overall Monthly Budget & Fixed/Free Allocation Inputs */}
           <div
             style={{
               padding: '1.25rem',
@@ -340,36 +375,137 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
               backgroundColor: 'var(--bg-tertiary)',
               border: '1px solid var(--primary-blue-tint)',
               marginBottom: '2rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.25rem',
             }}
           >
-            <label
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  color: 'var(--primary-blue)',
+                  marginBottom: 6,
+                }}
+              >
+                Overall Monthly Limit ({targetCurrency}) *
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', maxWidth: 400 }}>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={inputTotal}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setInputTotal(val);
+                    const num = parseFloat(val) || 0;
+                    // Auto-proportion if empty
+                    setInputFixed(Math.round(num * 0.45).toString());
+                    setInputFree(Math.round(num * 0.55).toString());
+                  }}
+                  placeholder="e.g. 3000000"
+                  style={{
+                    fontSize: '1.125rem',
+                    fontWeight: 700,
+                    width: '100%',
+                    padding: '8px 14px',
+                  }}
+                />
+                <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  {targetCurrency}
+                </span>
+              </div>
+            </div>
+
+            {/* Fixed vs Free Split Inputs */}
+            <div
               style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: 700,
-                color: 'var(--primary-blue)',
-                marginBottom: 6,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '1rem',
+                borderTop: '1px solid var(--border-light)',
+                paddingTop: '1rem',
               }}
             >
-              Overall Monthly Limit ({targetCurrency}) *
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', maxWidth: 400 }}>
-              <input
-                type="number"
-                step="0.01"
-                value={inputTotal}
-                onChange={(e) => setInputTotal(e.target.value)}
-                placeholder="e.g. 3000000"
-                style={{
-                  fontSize: '1.125rem',
-                  fontWeight: 700,
-                  width: '100%',
-                  padding: '8px 14px',
-                }}
-              />
-              <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                {targetCurrency}
-              </span>
+              {/* Fixed Budget Input */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Fixed Budget (고정 예산)
+                  </label>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    {parseFloat(inputTotal) > 0
+                      ? Math.round(((parseFloat(inputFixed) || 0) / parseFloat(inputTotal)) * 100)
+                      : 0}
+                    %
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={inputFixed}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setInputFixed(val);
+                      const fNum = parseFloat(val) || 0;
+                      const tNum = parseFloat(inputTotal) || 0;
+                      if (tNum > 0) {
+                        setInputFree(Math.max(0, tNum - fNum).toString());
+                      }
+                    }}
+                    placeholder="Fixed commitments"
+                    style={{ width: '100%', padding: '8px 12px', fontWeight: 600 }}
+                  />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                    {targetCurrency}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  Rent, utilities, subscriptions & fixed commitments
+                </div>
+              </div>
+
+              {/* Free Budget Input */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Free / Flexible Budget (자유 예산)
+                  </label>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    {parseFloat(inputTotal) > 0
+                      ? Math.round(((parseFloat(inputFree) || 0) / parseFloat(inputTotal)) * 100)
+                      : 0}
+                    %
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={inputFree}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setInputFree(val);
+                      const frNum = parseFloat(val) || 0;
+                      const tNum = parseFloat(inputTotal) || 0;
+                      if (tNum > 0) {
+                        setInputFixed(Math.max(0, tNum - frNum).toString());
+                      }
+                    }}
+                    placeholder="Flexible spending"
+                    style={{ width: '100%', padding: '8px 12px', fontWeight: 600 }}
+                  />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                    {targetCurrency}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  Groceries, dining, leisure & variable spending
+                </div>
+              </div>
             </div>
           </div>
 

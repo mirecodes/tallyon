@@ -17,6 +17,7 @@ interface FormRow {
   originalCurrency: CurrencyCode;
   category: string;
   expenseNature: ExpenseNature;
+  isFixed: boolean;
   transactionDate: string;
   transactionTime: string;
 }
@@ -57,6 +58,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     originalCurrency: 'CHF',
     category: 'Groceries',
     expenseNature: 'ONE_OFF',
+    isFixed: false,
     transactionDate: defaultDate,
     transactionTime: defaultTime,
   });
@@ -76,6 +78,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           originalCurrency: editingTransaction.originalCurrency,
           category: editingTransaction.category,
           expenseNature: editingTransaction.expenseNature,
+          isFixed: !!editingTransaction.isFixed,
           transactionDate: toLocalDateString(d),
           transactionTime: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
         },
@@ -88,6 +91,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           originalCurrency: 'CHF',
           category: 'Groceries',
           expenseNature: 'ONE_OFF',
+          isFixed: false,
           transactionDate: defaultDate,
           transactionTime: defaultTime,
         },
@@ -98,7 +102,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleRowChange = (index: number, field: keyof FormRow, value: string) => {
+  const handleRowChange = (index: number, field: keyof FormRow, value: string | boolean) => {
     setRows((prev) => {
       const copy = [...prev];
       copy[index] = { ...copy[index], [field]: value };
@@ -153,7 +157,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         originalAmount: amt,
         originalCurrency: r.originalCurrency,
         category: r.category || 'Other',
-        expenseNature: r.expenseNature,
+        expenseNature: r.isFixed ? 'RECURRING_MONTHLY' : r.expenseNature,
+        isFixed: r.isFixed,
         transactionTime: isoTime,
       });
     }
@@ -331,12 +336,46 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     value={rows[0].expenseNature}
                     onChange={(e) => handleRowChange(0, 'expenseNature', e.target.value as ExpenseNature)}
                     style={{ width: '100%' }}
+                    disabled={rows[0].isFixed}
                   >
                     <option value="ONE_OFF">One-off Expense</option>
                     <option value="RECURRING_MONTHLY">Monthly Recurring</option>
                     <option value="RECURRING_YEARLY">Yearly Recurring</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Fixed Monthly Expense Option */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  backgroundColor: rows[0].isFixed ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                  border: rows[0].isFixed ? '1px solid var(--primary-blue-tint)' : '1px solid var(--border-light)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                onClick={() => handleRowChange(0, 'isFixed', !rows[0].isFixed)}
+              >
+                <input
+                  type="checkbox"
+                  id="fixed-expense-chk"
+                  checked={rows[0].isFixed}
+                  onChange={(e) => handleRowChange(0, 'isFixed', e.target.checked)}
+                  style={{ marginTop: 3, cursor: 'pointer' }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <label htmlFor="fixed-expense-chk" style={{ cursor: 'pointer', fontSize: '0.8125rem' }}>
+                  <span style={{ fontWeight: 700, color: rows[0].isFixed ? 'var(--primary-blue)' : 'var(--text-primary)' }}>
+                    Fixed Recurring Expense (고정 지출)
+                  </span>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                    When enabled, this monthly commitment automatically carries over to all subsequent months as a planned fixed expense.
+                  </div>
+                </label>
               </div>
 
               {/* Date & Time */}
@@ -372,12 +411,13 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 <thead>
                   <tr style={{ backgroundColor: 'var(--bg-subtle)', textAlign: 'left' }}>
                     <th style={{ padding: '8px 10px', width: '22%' }}>Description</th>
-                    <th style={{ padding: '8px 10px', width: '14%' }}>Amount</th>
-                    <th style={{ padding: '8px 10px', width: '12%' }}>Currency</th>
-                    <th style={{ padding: '8px 10px', width: '18%' }}>Category</th>
-                    <th style={{ padding: '8px 10px', width: '16%' }}>Nature</th>
-                    <th style={{ padding: '8px 10px', width: '12%' }}>Date</th>
-                    <th style={{ padding: '8px 10px', width: '6%', textAlign: 'center' }}>Actions</th>
+                    <th style={{ padding: '8px 10px', width: '13%' }}>Amount</th>
+                    <th style={{ padding: '8px 10px', width: '11%' }}>Currency</th>
+                    <th style={{ padding: '8px 10px', width: '16%' }}>Category</th>
+                    <th style={{ padding: '8px 10px', width: '14%' }}>Nature</th>
+                    <th style={{ padding: '8px 10px', width: '8%', textAlign: 'center' }}>Fixed?</th>
+                    <th style={{ padding: '8px 10px', width: '11%' }}>Date</th>
+                    <th style={{ padding: '8px 10px', width: '5%', textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -433,11 +473,20 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                           value={row.expenseNature}
                           onChange={(e) => handleRowChange(idx, 'expenseNature', e.target.value as ExpenseNature)}
                           style={{ width: '100%', padding: '6px 4px' }}
+                          disabled={row.isFixed}
                         >
                           <option value="ONE_OFF">One-off</option>
                           <option value="RECURRING_MONTHLY">Monthly</option>
                           <option value="RECURRING_YEARLY">Yearly</option>
                         </select>
+                      </td>
+                      <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={row.isFixed}
+                          onChange={(e) => handleRowChange(idx, 'isFixed', e.target.checked)}
+                          title="Fixed Recurring Expense"
+                        />
                       </td>
                       <td style={{ padding: '6px 4px' }}>
                         <input

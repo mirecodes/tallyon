@@ -21,6 +21,7 @@ const SEED_TRANSACTIONS: Array<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt
     originalCurrency: 'CHF',
     category: 'Transport',
     expenseNature: 'RECURRING_MONTHLY',
+    isFixed: true,
   },
   {
     description: 'Student Studio Rent (ETH Housing)',
@@ -29,6 +30,7 @@ const SEED_TRANSACTIONS: Array<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt
     originalCurrency: 'CHF',
     category: 'Housing',
     expenseNature: 'RECURRING_MONTHLY',
+    isFixed: true,
   },
   {
     description: 'ChatGPT Plus Subscription',
@@ -37,6 +39,7 @@ const SEED_TRANSACTIONS: Array<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt
     originalCurrency: 'USD',
     category: 'Subscriptions',
     expenseNature: 'RECURRING_MONTHLY',
+    isFixed: true,
   },
   {
     description: 'Kyobo Books Technical Books (Korea)',
