@@ -21,20 +21,20 @@ const PALETTE_COLORS = [
 ];
 
 const NATURE_CONFIG = {
-  ONE_OFF: {
-    label: 'One-off Expenses',
-    color: '#3B82F6', // Vibrant Blue
+  RECURRING_YEARLY: {
+    label: 'Yearly Commitments',
+    color: '#1E3A8A', // Deep Dark Navy Blue (Blue-900)
     bg: '#EFF6FF',
   },
   RECURRING_MONTHLY: {
     label: 'Monthly Commitments',
-    color: '#EF4444', // Red (matching fixed commitment tone)
-    bg: '#FEF2F2',
+    color: '#3B82F6', // Medium Vibrant Royal Blue (Blue-500)
+    bg: '#F0F7FF',
   },
-  RECURRING_YEARLY: {
-    label: 'Yearly Commitments',
-    color: '#8B5CF6', // Purple
-    bg: '#F5F3FF',
+  ONE_OFF: {
+    label: 'One-off Expenses',
+    color: '#93C5FD', // Light Soft Blue (Blue-300)
+    bg: '#F8FAFC',
   },
 } as const;
 
@@ -292,7 +292,7 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
           </div>
         </div>
 
-        {/* Multi-Colored Stacked Progress Bar Against Monthly Budget */}
+        {/* Multi-Colored Stacked Progress Bar Against Monthly Budget: Yearly -> Monthly -> One-off (gradient from deep to light blue) */}
         <div
           style={{
             width: '100%',
@@ -304,30 +304,30 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
             marginBottom: '1rem',
           }}
         >
-          {/* Monthly Commitments (Red) */}
+          {/* Yearly Commitments (Dark Blue) */}
           <div
             style={{
-              width: `${Math.min(100, monthlyBudgetPct)}%`,
-              height: '100%',
-              backgroundColor: NATURE_CONFIG.RECURRING_MONTHLY.color,
-              transition: 'width 0.4s ease',
-            }}
-            title={`Monthly Commitments: ${formatCurrency(monthlyAmount, targetCurrency)} (${monthlyBudgetPct.toFixed(1)}% of budget)`}
-          />
-          {/* Yearly Commitments (Purple) */}
-          <div
-            style={{
-              width: `${Math.min(Math.max(0, 100 - monthlyBudgetPct), yearlyBudgetPct)}%`,
+              width: `${Math.min(100, yearlyBudgetPct)}%`,
               height: '100%',
               backgroundColor: NATURE_CONFIG.RECURRING_YEARLY.color,
               transition: 'width 0.4s ease',
             }}
             title={`Yearly Commitments: ${formatCurrency(yearlyAmount, targetCurrency)} (${yearlyBudgetPct.toFixed(1)}% of budget)`}
           />
-          {/* One-off Expenses (Blue) */}
+          {/* Monthly Commitments (Medium Blue) */}
           <div
             style={{
-              width: `${Math.min(Math.max(0, 100 - monthlyBudgetPct - yearlyBudgetPct), oneOffBudgetPct)}%`,
+              width: `${Math.min(Math.max(0, 100 - yearlyBudgetPct), monthlyBudgetPct)}%`,
+              height: '100%',
+              backgroundColor: NATURE_CONFIG.RECURRING_MONTHLY.color,
+              transition: 'width 0.4s ease',
+            }}
+            title={`Monthly Commitments: ${formatCurrency(monthlyAmount, targetCurrency)} (${monthlyBudgetPct.toFixed(1)}% of budget)`}
+          />
+          {/* One-off Expenses (Light Blue) */}
+          <div
+            style={{
+              width: `${Math.min(Math.max(0, 100 - yearlyBudgetPct - monthlyBudgetPct), oneOffBudgetPct)}%`,
               height: '100%',
               backgroundColor: NATURE_CONFIG.ONE_OFF.color,
               transition: 'width 0.4s ease',
@@ -336,7 +336,7 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
           />
         </div>
 
-        {/* Nature Breakdown Items Legend & Share */}
+        {/* Nature Breakdown Items Legend & Share: Yearly -> Monthly -> One-off */}
         <div
           style={{
             display: 'grid',
@@ -344,42 +344,7 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
             gap: '0.75rem',
           }}
         >
-          {/* Monthly Commitments */}
-          <div
-            style={{
-              padding: '10px 12px',
-              borderRadius: 8,
-              backgroundColor: 'var(--bg-secondary)',
-              borderLeft: `4px solid ${NATURE_CONFIG.RECURRING_MONTHLY.color}`,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                {NATURE_CONFIG.RECURRING_MONTHLY.label}
-              </span>
-              <span
-                className="tabular-nums"
-                style={{
-                  fontSize: '0.6875rem',
-                  fontWeight: 700,
-                  color: NATURE_CONFIG.RECURRING_MONTHLY.color,
-                }}
-              >
-                {monthlyBudgetPct.toFixed(1)}% of budget
-              </span>
-            </div>
-            <div
-              className="tabular-nums"
-              style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}
-            >
-              {formatCurrency(monthlyAmount, targetCurrency)}
-            </div>
-          </div>
-
-          {/* Yearly Commitments */}
+          {/* 1. Yearly Commitments (Darkest Blue) */}
           <div
             style={{
               padding: '10px 12px',
@@ -414,7 +379,42 @@ export const BreakdownAnalyticsView: React.FC<BreakdownAnalyticsViewProps> = ({
             </div>
           </div>
 
-          {/* One-off Expenses */}
+          {/* 2. Monthly Commitments (Medium Blue) */}
+          <div
+            style={{
+              padding: '10px 12px',
+              borderRadius: 8,
+              backgroundColor: 'var(--bg-secondary)',
+              borderLeft: `4px solid ${NATURE_CONFIG.RECURRING_MONTHLY.color}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                {NATURE_CONFIG.RECURRING_MONTHLY.label}
+              </span>
+              <span
+                className="tabular-nums"
+                style={{
+                  fontSize: '0.6875rem',
+                  fontWeight: 700,
+                  color: NATURE_CONFIG.RECURRING_MONTHLY.color,
+                }}
+              >
+                {monthlyBudgetPct.toFixed(1)}% of budget
+              </span>
+            </div>
+            <div
+              className="tabular-nums"
+              style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}
+            >
+              {formatCurrency(monthlyAmount, targetCurrency)}
+            </div>
+          </div>
+
+          {/* 3. One-off Expenses (Lightest Blue) */}
           <div
             style={{
               padding: '10px 12px',
