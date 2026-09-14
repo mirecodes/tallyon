@@ -56,9 +56,9 @@ export const App: React.FC = () => {
     // (A fixed expense created in month M carries over to all months >= M until stoppedAfterMonth)
     const fixedCarriedOver: Transaction[] = [];
 
-    // Find all fixed expenses created in earlier months
+    // Find all monthly recurring fixed expenses created in earlier months
     for (const tx of transactions) {
-      if (tx.isFixed || tx.expenseNature === 'RECURRING_MONTHLY') {
+      if (tx.expenseNature === 'RECURRING_MONTHLY' || (tx.isFixed && tx.expenseNature !== 'RECURRING_YEARLY' && tx.expenseNature !== 'ONE_OFF')) {
         // If it was stopped in or before selectedYearMonth, don't carry over
         if (tx.stoppedAfterMonth && selectedYearMonth >= tx.stoppedAfterMonth) {
           continue;
