@@ -444,15 +444,31 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                         )}
                         <span
                           className={`tag-pill-outline ${
-                            tx.expenseNature === 'ONE_OFF'
+                            tx.isFixed
+                              ? 'nature-monthly'
+                              : tx.expenseNature === 'ONE_OFF'
                               ? 'nature-one-off'
                               : tx.expenseNature === 'RECURRING_MONTHLY'
                               ? 'nature-monthly'
                               : 'nature-yearly'
                           }`}
-                          style={{ fontSize: '0.6875rem' }}
+                          style={{
+                            fontSize: '0.6875rem',
+                            ...(tx.isFixed
+                              ? {
+                                  backgroundColor: 'var(--bg-tertiary)',
+                                  borderColor: 'var(--primary-blue-tint)',
+                                  color: 'var(--primary-blue)',
+                                  fontWeight: 700,
+                                }
+                              : {}),
+                          }}
                         >
-                          {tx.expenseNature === 'ONE_OFF'
+                          {tx.isFixed
+                            ? tx.expenseNature === 'RECURRING_YEARLY'
+                              ? 'Fixed Long-term'
+                              : 'Fixed Monthly'
+                            : tx.expenseNature === 'ONE_OFF'
                             ? 'One-off'
                             : tx.expenseNature === 'RECURRING_MONTHLY'
                             ? 'Monthly'
