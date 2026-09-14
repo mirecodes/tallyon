@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { TargetCurrency, MonthlyBudget, ExchangeRateRecord, AnalyticsBreakdown, ValuatedTransaction, CumulativeBudgetInfo } from '../types';
 import { formatCurrency } from '../utils/currency';
 import { STATIC_FALLBACK_RATES } from '../repositories/LocalStorageExchangeRateRepository';
-import { ChevronLeft, ChevronRight, Save, Check, Trash2, Calendar, Lock, Sliders, ShieldCheck, Layers, TrendingUp, TrendingDown, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Save, Check, Trash2, Calendar, Lock, Sliders, ShieldCheck, Layers, TrendingUp, TrendingDown, Settings } from 'lucide-react';
 import { MonthPickerPopover } from './MonthPickerPopover';
 import { useCategories, getCategoryColor, getCategoryIconElement } from '../utils/categories';
 
@@ -53,6 +53,15 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
   };
 
   const [savedNotice, setSavedNotice] = useState(false);
+  const [isLongTermCollapsed, setIsLongTermCollapsed] = useState(false);
+
+  // Separate fixed transactions into Fixed Monthly and Fixed Long-term
+  const fixedMonthlyList = fixedTransactions.filter(
+    (tx) => tx.expenseNature !== 'RECURRING_YEARLY'
+  );
+  const fixedLongTermList = fixedTransactions.filter(
+    (tx) => tx.expenseNature === 'RECURRING_YEARLY'
+  );
 
   // Month navigation
   const [yearStr, monthStr] = selectedYearMonth.split('-');
@@ -947,144 +956,334 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
             </div>
           </div>
         ) : (
-          /* Fixed Expenses Items List with Consistent Row Design */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {fixedTransactions.map((tx) => {
-              const catColor = getCategoryColor(tx.category, categories);
-              return (
+          /* Fixed Expenses Items List with Separate Sections */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* Section 1: Fixed Monthly */}
+            {fixedMonthlyList.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                  Fixed Monthly ({fixedMonthlyList.length})
+                </div>
+                {fixedMonthlyList.map((tx) => {
+                  const catColor = getCategoryColor(tx.category, categories);
+                  return (
+                    <div
+                      key={tx.id}
+                      style={{
+                        position: 'relative',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 16px 12px 20px',
+                        borderRadius: 12,
+                        backgroundColor: 'var(--bg-primary)',
+                        border: '1px solid var(--border-light)',
+                        gap: '1rem',
+                        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                      }}
+                      className="transaction-row"
+                    >
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: 4,
+                          backgroundColor: catColor,
+                        }}
+                      />
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--bg-secondary)',
+                            border: `1.5px solid ${catColor}`,
+                            color: catColor,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {getCategoryIconElement(tx.category, 15)}
+                        </div>
+
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span
+                              style={{
+                                fontWeight: 700,
+                                fontSize: '0.9375rem',
+                                color: 'var(--text-primary)',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {tx.description}
+                            </span>
+                            <span className="tag-pill-outline" style={{ fontSize: '0.6875rem' }}>
+                              {tx.category}
+                            </span>
+                            <span
+                              className="tag-pill-outline"
+                              style={{
+                                fontSize: '0.6875rem',
+                                backgroundColor: 'var(--bg-tertiary)',
+                                borderColor: 'var(--primary-blue-tint)',
+                                color: 'var(--primary-blue)',
+                                fontWeight: 700,
+                              }}
+                            >
+                              Fixed Monthly
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 3 }}>
+                            {tx.isAutoGenerated ? 'Recurring commitment' : 'Base recurring entry'} •{' '}
+                            {new Date(tx.transactionTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexShrink: 0 }}>
+                        <div style={{ textAlign: 'right', minWidth: 90 }}>
+                          <div
+                            className="tabular-nums"
+                            style={{
+                              fontSize: '1rem',
+                              fontWeight: 800,
+                              color: 'var(--text-primary)',
+                            }}
+                          >
+                            {formatCurrency(tx.convertedAmount, targetCurrency)}
+                          </div>
+                          <div
+                            className="tabular-nums"
+                            style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              color: 'var(--text-muted)',
+                            }}
+                          >
+                            {formatCurrency(tx.originalAmount, tx.originalCurrency)}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Stop recurring expense "${tx.description}" starting from ${selectedYearMonth} onward?`
+                              )
+                            ) {
+                              onStopFixedExpense?.(tx);
+                            }
+                          }}
+                          className="action-icon-btn btn-danger"
+                          title={`Stop recurring expense from ${selectedYearMonth} onward`}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Horizontal Divider between Monthly and Long-term */}
+            {fixedMonthlyList.length > 0 && fixedLongTermList.length > 0 && (
+              <div
+                style={{
+                  borderTop: '1px dashed var(--border-light)',
+                  margin: '0.5rem 0',
+                }}
+              />
+            )}
+
+            {/* Section 2: Fixed Long-term (Bottom, Collapsible via Toggle Button) */}
+            {fixedLongTermList.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div
-                  key={tx.id}
                   style={{
-                    position: 'relative',
-                    overflow: 'hidden',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '12px 16px 12px 20px',
-                    borderRadius: 12,
-                    backgroundColor: 'var(--bg-primary)',
-                    border: '1px solid var(--border-light)',
-                    gap: '1rem',
-                    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
                   }}
-                  className="transaction-row"
                 >
-                  {/* Left Color Tape Line */}
-                  <div
+                  <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                    Fixed Long-term ({fixedLongTermList.length})
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsLongTermCollapsed((prev) => !prev)}
                     style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 4,
-                      backgroundColor: catColor,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      color: 'var(--primary-blue)',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
                     }}
-                  />
-
-                  {/* Left Column: Icon + Category Badge + Title & Date */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-                    {/* Category Round Icon */}
-                    <div
+                  >
+                    <span>{isLongTermCollapsed ? 'Show' : 'Hide'}</span>
+                    <ChevronDown
+                      size={14}
                       style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        backgroundColor: 'var(--bg-secondary)',
-                        border: `1.5px solid ${catColor}`,
-                        color: catColor,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
+                        transform: isLongTermCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s ease',
                       }}
-                    >
-                      {getCategoryIconElement(tx.category, 15)}
-                    </div>
-
-                    {/* Details */}
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            fontSize: '0.9375rem',
-                            color: 'var(--text-primary)',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {tx.description}
-                        </span>
-                        <span className="tag-pill-outline" style={{ fontSize: '0.6875rem' }}>
-                          {tx.category}
-                        </span>
-                        <span
-                          className="tag-pill-outline"
-                          style={{
-                            fontSize: '0.6875rem',
-                            backgroundColor: 'var(--bg-tertiary)',
-                            borderColor: 'var(--primary-blue-tint)',
-                            color: 'var(--primary-blue)',
-                            fontWeight: 700,
-                          }}
-                        >
-                          {tx.expenseNature === 'RECURRING_YEARLY' ? 'Fixed Long-term' : 'Fixed Monthly'}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 3 }}>
-                        {tx.isAutoGenerated ? 'Recurring commitment' : 'Base recurring entry'} •{' '}
-                        {new Date(tx.transactionTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Amount + Clean Trash Icon Button */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexShrink: 0 }}>
-                    <div style={{ textAlign: 'right', minWidth: 90 }}>
-                      <div
-                        className="tabular-nums"
-                        style={{
-                          fontSize: '1rem',
-                          fontWeight: 800,
-                          color: 'var(--text-primary)',
-                        }}
-                      >
-                        {formatCurrency(tx.convertedAmount, targetCurrency)}
-                      </div>
-                      <div
-                        className="tabular-nums"
-                        style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          color: 'var(--text-muted)',
-                        }}
-                      >
-                        {formatCurrency(tx.originalAmount, tx.originalCurrency)}
-                      </div>
-                    </div>
-
-                    {/* Delete action matching transaction item UI */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `Stop recurring expense "${tx.description}" starting from ${selectedYearMonth} onward?`
-                          )
-                        ) {
-                          onStopFixedExpense?.(tx);
-                        }
-                      }}
-                      className="action-icon-btn btn-danger"
-                      title={`Stop recurring expense from ${selectedYearMonth} onward`}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
+                    />
+                  </button>
                 </div>
-              );
-            })}
+
+                {!isLongTermCollapsed && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {fixedLongTermList.map((tx) => {
+                      const catColor = getCategoryColor(tx.category, categories);
+                      return (
+                        <div
+                          key={tx.id}
+                          style={{
+                            position: 'relative',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '12px 16px 12px 20px',
+                            borderRadius: 12,
+                            backgroundColor: 'var(--bg-primary)',
+                            border: '1px solid var(--border-light)',
+                            gap: '1rem',
+                            transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                          }}
+                          className="transaction-row"
+                        >
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: 0,
+                              top: 0,
+                              bottom: 0,
+                              width: 4,
+                              backgroundColor: catColor,
+                            }}
+                          />
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                backgroundColor: 'var(--bg-secondary)',
+                                border: `1.5px solid ${catColor}`,
+                                color: catColor,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {getCategoryIconElement(tx.category, 15)}
+                            </div>
+
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                <span
+                                  style={{
+                                    fontWeight: 700,
+                                    fontSize: '0.9375rem',
+                                    color: 'var(--text-primary)',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                  }}
+                                >
+                                  {tx.description}
+                                </span>
+                                <span className="tag-pill-outline" style={{ fontSize: '0.6875rem' }}>
+                                  {tx.category}
+                                </span>
+                                <span
+                                  className="tag-pill-outline"
+                                  style={{
+                                    fontSize: '0.6875rem',
+                                    backgroundColor: 'var(--bg-tertiary)',
+                                    borderColor: 'var(--primary-blue-tint)',
+                                    color: 'var(--primary-blue)',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  Fixed Long-term
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 3 }}>
+                                Manual commitment •{' '}
+                                {new Date(tx.transactionTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexShrink: 0 }}>
+                            <div style={{ textAlign: 'right', minWidth: 90 }}>
+                              <div
+                                className="tabular-nums"
+                                style={{
+                                  fontSize: '1rem',
+                                  fontWeight: 800,
+                                  color: 'var(--text-primary)',
+                                }}
+                              >
+                                {formatCurrency(tx.convertedAmount, targetCurrency)}
+                              </div>
+                              <div
+                                className="tabular-nums"
+                                style={{
+                                  fontSize: '0.75rem',
+                                  fontWeight: 600,
+                                  color: 'var(--text-muted)',
+                                }}
+                              >
+                                {formatCurrency(tx.originalAmount, tx.originalCurrency)}
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Delete expense "${tx.description}"?`
+                                  )
+                                ) {
+                                  onStopFixedExpense?.(tx);
+                                }
+                              }}
+                              className="action-icon-btn btn-danger"
+                              title="Delete expense"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
