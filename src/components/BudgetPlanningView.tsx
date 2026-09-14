@@ -1029,7 +1029,7 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
                             fontWeight: 700,
                           }}
                         >
-                          Fixed Monthly
+                          {tx.expenseNature === 'RECURRING_YEARLY' ? 'Fixed Long-term' : 'Fixed Monthly'}
                         </span>
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 3 }}>

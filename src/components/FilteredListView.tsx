@@ -641,7 +641,7 @@ export const FilteredListView: React.FC<FilteredListViewProps> = ({
                           fontWeight: 700,
                         }}
                       >
-                        Fixed Monthly
+                        {tx.expenseNature === 'RECURRING_YEARLY' ? 'Fixed Long-term' : 'Fixed Monthly'}
                       </span>
                     ) : (
                       <span
