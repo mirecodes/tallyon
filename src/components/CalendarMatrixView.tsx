@@ -10,6 +10,7 @@ interface CalendarMatrixViewProps {
   onSelectTransaction?: (tx: ValuatedTransaction) => void;
   selectedYearMonth?: string;
   onMonthChange?: (ym: string) => void;
+  flexibleBudget?: number;            // Month's flexible budget in targetCurrency
 }
 
 export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
@@ -18,6 +19,7 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
   onSelectTransaction,
   selectedYearMonth,
   onMonthChange,
+  flexibleBudget = 0,
 }) => {
   const [internalDate, setInternalDate] = useState(() => new Date());
   const [selectedDayData, setSelectedDayData] = useState<DailyAggregate | null>(null);
@@ -52,6 +54,9 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
     setInternalDate(d);
     onMonthChange?.(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
   };
+
+  // A day overspends when its flexible spending exceeds twice the even daily share of the flexible budget
+  const overspendThreshold = (2 * flexibleBudget) / new Date(year, month + 1, 0).getDate();
 
   // Month title format
   const monthName = currentDate.toLocaleString('en-US', { month: 'long' });
@@ -294,26 +299,40 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                           )}
                         </div>
 
-                        {/* Expense Amount Pill (compact, tight font to prevent overflow/distortion) */}
+                        {/* Flexible spending line + glass total pill (compact, tight font to prevent overflow) */}
                         {hasExpenses ? (
-                          <div
-                            className="tabular-nums"
-                            style={{
-                              fontSize: '0.6875rem',
-                              fontWeight: 700,
-                              color: 'var(--expense-rose)',
-                              backgroundColor: 'rgba(255, 228, 230, 0.85)',
-                              borderRadius: 4,
-                              padding: '1px 3px',
-                              textAlign: 'center',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              letterSpacing: '-0.02em',
-                            }}
-                            title={`${formatCurrency(dayData.totalAmount, targetCurrency)} (${dayData.itemCount} items)`}
-                          >
-                            -{formatCurrency(dayData.totalAmount, targetCurrency)}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                            {(() => {
+                              const flex = dayData.transactions.reduce((s, t) => (t.isFixed ? s : s + t.convertedAmount), 0);
+                              if (flex <= 0) return null;
+                              const isOverspent = overspendThreshold > 0 && flex > overspendThreshold;
+                              return (
+                                <div
+                                  className="tabular-nums"
+                                  style={{
+                                    fontSize: '0.625rem',
+                                    fontWeight: isOverspent ? 800 : 600,
+                                    color: isOverspent ? 'var(--expense-rose)' : 'var(--text-muted)',
+                                    textAlign: 'center',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    letterSpacing: '-0.02em',
+                                  }}
+                                  title={`Flexible spending: ${formatCurrency(flex, targetCurrency)}${
+                                    isOverspent ? ` (over daily limit ${formatCurrency(overspendThreshold, targetCurrency)})` : ''
+                                  }`}
+                                >
+                                  {formatCurrency(flex, targetCurrency)}
+                                </div>
+                              );
+                            })()}
+                            <div
+                              className="tabular-nums glass-pill"
+                              title={`${formatCurrency(dayData.totalAmount, targetCurrency)} (${dayData.itemCount} items)`}
+                            >
+                              -{formatCurrency(dayData.totalAmount, targetCurrency)}
+                            </div>
                           </div>
                         ) : (
                           <div style={{ height: 14 }} />
