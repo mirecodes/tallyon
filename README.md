@@ -106,7 +106,7 @@ Transaction entry and modification modal dialogues adhere to a clean, unambiguou
 #### ⑤ Floating Add Expense Modal
 - Triggered by the persistent floating pencil button in the lower-right corner.
 - Offers **Single Entry** and **Batch Entry** tabs for rapid expense input.
-- Toggle **Recurring Fixed Expense** to automatically project the transaction into future months.
+- **Fixed** and **Cycle** are independent. Only **Fixed + Monthly** auto-projects into future months; editing a later month's copy makes it the template for every month after it.
 
 ---
 

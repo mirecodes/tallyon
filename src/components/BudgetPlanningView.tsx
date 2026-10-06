@@ -5,6 +5,7 @@ import { STATIC_FALLBACK_RATES } from '../repositories/LocalStorageExchangeRateR
 import { ChevronLeft, ChevronRight, ChevronDown, Save, Check, Trash2, Calendar, Lock, Sliders, ShieldCheck, Layers, TrendingUp, TrendingDown, Settings } from 'lucide-react';
 import { MonthPickerPopover } from './MonthPickerPopover';
 import { useCategories, getCategoryColor, getCategoryIconElement } from '../utils/categories';
+import { cycleLabel, isRecurringFixed } from '../utils/fixedExpenses';
 
 interface BudgetPlanningViewProps {
   budgetsMap: Record<string, MonthlyBudget>;
@@ -55,13 +56,9 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
   const [savedNotice, setSavedNotice] = useState(false);
   const [isLongTermCollapsed, setIsLongTermCollapsed] = useState(false);
 
-  // Separate fixed transactions into Fixed Monthly and Fixed Long-term
-  const fixedMonthlyList = fixedTransactions.filter(
-    (tx) => tx.expenseNature !== 'RECURRING_YEARLY'
-  );
-  const fixedLongTermList = fixedTransactions.filter(
-    (tx) => tx.expenseNature === 'RECURRING_YEARLY'
-  );
+  // Separate fixed transactions into repeating Fixed Monthly and non-repeating Fixed Long-term / One-off
+  const fixedMonthlyList = fixedTransactions.filter(isRecurringFixed);
+  const fixedLongTermList = fixedTransactions.filter((tx) => !isRecurringFixed(tx));
 
   // Month navigation
   const [yearStr, monthStr] = selectedYearMonth.split('-');
@@ -1118,7 +1115,7 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
                   }}
                 >
                   <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                    Fixed Long-term ({fixedLongTermList.length})
+                    Fixed Long-term / One-off ({fixedLongTermList.length})
                   </div>
 
                   <button
@@ -1226,7 +1223,7 @@ export const BudgetPlanningView: React.FC<BudgetPlanningViewProps> = ({
                                     fontWeight: 700,
                                   }}
                                 >
-                                  Fixed Long-term
+                                  {cycleLabel(tx)}
                                 </span>
                               </div>
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 3 }}>

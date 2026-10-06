@@ -48,6 +48,7 @@ export interface AnalyticsBreakdown {
   targetCurrency: TargetCurrency;
   grandTotal: number;
   fixedTotal: number;                 // Sum of fixed expenses
+  fixedPendingTotal: number;          // Part of fixedTotal scheduled after now (not yet executed)
   flexibleTotal: number;              // Sum of flexible expenses
   byCategory: Array<{
     category: string;
