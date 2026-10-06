@@ -13,6 +13,16 @@ interface CalendarMatrixViewProps {
   flexibleBudget?: number;            // Month's flexible budget in targetCurrency
 }
 
+const VIEW_MODES = [
+  { key: 'both', label: 'Daily total + flexible' },
+  { key: 'total', label: 'Daily total only' },
+  { key: 'flex', label: 'Flexible only' },
+] as const;
+type ViewMode = (typeof VIEW_MODES)[number]['key'];
+
+const flexibleOf = (d?: DailyAggregate) =>
+  d ? d.transactions.reduce((s, t) => (t.isFixed ? s : s + t.convertedAmount), 0) : 0;
+
 export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
   calendarMap,
   targetCurrency,
@@ -23,6 +33,8 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
 }) => {
   const [internalDate, setInternalDate] = useState(() => new Date());
   const [selectedDayData, setSelectedDayData] = useState<DailyAggregate | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('both');
+  const modeIdx = VIEW_MODES.findIndex((m) => m.key === viewMode);
 
   // Derive current viewing date from selectedYearMonth if provided
   const currentDate = React.useMemo(() => {
@@ -124,6 +136,21 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="dot-slider" role="radiogroup" aria-label="Calendar amounts" style={{ marginRight: '0.5rem' }}>
+              <span className="dot-slider-thumb" style={{ transform: `translateX(${modeIdx * 22}px)` }} />
+              {VIEW_MODES.map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={viewMode === m.key}
+                  aria-label={m.label}
+                  title={m.label}
+                  className="dot-slider-dot"
+                  onClick={() => setViewMode(m.key)}
+                />
+              ))}
+            </div>
             <button
               type="button"
               onClick={prevMonth}
@@ -176,7 +203,7 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                   paddingLeft: 4,
                 }}
               >
-                WEEK TOTAL
+                {viewMode === 'flex' ? 'WEEK FLEXIBLE' : 'WEEK TOTAL'}
               </div>
             </div>
 
@@ -185,9 +212,8 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
               // Calculate weekly total
               let weekTotal = 0;
               for (const cell of week) {
-                if (cell.dateStr && calendarMap[cell.dateStr]) {
-                  weekTotal += calendarMap[cell.dateStr].totalAmount;
-                }
+                const d = cell.dateStr ? calendarMap[cell.dateStr] : undefined;
+                if (d) weekTotal += viewMode === 'flex' ? flexibleOf(d) : d.totalAmount;
               }
               const formattedWeekTotal = targetCurrency === 'KRW' ? Math.round(weekTotal) : Number(weekTotal.toFixed(2));
 
@@ -236,6 +262,12 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                     const isToday = cell.dateStr === todayStr;
                     const hasExpenses = dayData && dayData.totalAmount > 0;
                     const isSelected = selectedDayData?.date === cell.dateStr;
+                    const flex = flexibleOf(dayData);
+                    const isOverspent = overspendThreshold > 0 && flex > overspendThreshold;
+                    const flexTitle = `Flexible spending: ${formatCurrency(flex, targetCurrency)}${
+                      isOverspent ? ` (over daily limit ${formatCurrency(overspendThreshold, targetCurrency)})` : ''
+                    }`;
+                    const pillAmount = viewMode === 'flex' ? flex : dayData?.totalAmount ?? 0;
 
                     return (
                       <div
@@ -300,38 +332,37 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                         </div>
 
                         {/* Flexible spending line + glass total pill (compact, tight font to prevent overflow) */}
-                        {hasExpenses ? (
+                        {pillAmount > 0 ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                            {(() => {
-                              const flex = dayData.transactions.reduce((s, t) => (t.isFixed ? s : s + t.convertedAmount), 0);
-                              if (flex <= 0) return null;
-                              const isOverspent = overspendThreshold > 0 && flex > overspendThreshold;
-                              return (
-                                <div
-                                  className="tabular-nums"
-                                  style={{
-                                    fontSize: '0.625rem',
-                                    fontWeight: isOverspent ? 800 : 600,
-                                    color: isOverspent ? 'var(--expense-rose)' : 'var(--text-muted)',
-                                    textAlign: 'center',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    letterSpacing: '-0.02em',
-                                  }}
-                                  title={`Flexible spending: ${formatCurrency(flex, targetCurrency)}${
-                                    isOverspent ? ` (over daily limit ${formatCurrency(overspendThreshold, targetCurrency)})` : ''
-                                  }`}
-                                >
-                                  {formatCurrency(flex, targetCurrency)}
-                                </div>
-                              );
-                            })()}
+                            {viewMode === 'both' && flex > 0 && (
+                              <div
+                                className="tabular-nums"
+                                style={{
+                                  fontSize: '0.625rem',
+                                  fontWeight: isOverspent ? 800 : 600,
+                                  color: isOverspent ? 'var(--expense-rose)' : 'var(--text-muted)',
+                                  textAlign: 'right',
+                                  padding: '0 5px',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  letterSpacing: '-0.02em',
+                                }}
+                                title={flexTitle}
+                              >
+                                {formatCurrency(flex, targetCurrency)}
+                              </div>
+                            )}
                             <div
                               className="tabular-nums glass-pill"
-                              title={`${formatCurrency(dayData.totalAmount, targetCurrency)} (${dayData.itemCount} items)`}
+                              style={viewMode === 'flex' && isOverspent ? { color: 'var(--expense-rose)', fontWeight: 800 } : undefined}
+                              title={
+                                viewMode === 'flex'
+                                  ? flexTitle
+                                  : `${formatCurrency(dayData.totalAmount, targetCurrency)} (${dayData.itemCount} items)`
+                              }
                             >
-                              -{formatCurrency(dayData.totalAmount, targetCurrency)}
+                              -{formatCurrency(pillAmount, targetCurrency)}
                             </div>
                           </div>
                         ) : (

@@ -86,9 +86,13 @@ Fixed entries dated after the current moment count as **upcoming**. They are inc
 
 ### Calendar
 - Monthly grid with weekend tints (Sunday soft red, Saturday soft blue) and a separate `WEEK TOTAL` column.
-- Each day shows:
+- Each day shows (right-aligned):
   - **Flexible spending** for that day in gray text.
-  - The **daily total** in a liquid-glass pill.
+  - The **daily total** in a matte-glass pill.
+- A three-dot slider above the grid switches what each day shows:
+  1. Daily total + flexible spending (default)
+  2. Daily total only
+  3. Flexible spending only (the week column then sums flexible spending)
 - **Overspending days**: the flexible amount turns **bold red** when it exceeds
 
   $$\frac{2 \times \text{monthly flexible budget}}{\text{days in month}}$$
