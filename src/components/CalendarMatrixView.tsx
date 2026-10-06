@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { TargetCurrency, DailyAggregate, ValuatedTransaction } from '../types';
 import { formatCurrency, toLocalDateString } from '../utils/currency';
 import { ChevronLeft, ChevronRight, Calendar as CalIcon, Banknote } from 'lucide-react';
+import { cycleLabel } from '../utils/fixedExpenses';
 
 interface CalendarMatrixViewProps {
   calendarMap: Record<string, DailyAggregate>;
@@ -444,9 +445,7 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                         )}
                         <span
                           className={`tag-pill-outline ${
-                            tx.isFixed
-                              ? 'nature-monthly'
-                              : tx.expenseNature === 'ONE_OFF'
+                            tx.expenseNature === 'ONE_OFF'
                               ? 'nature-one-off'
                               : tx.expenseNature === 'RECURRING_MONTHLY'
                               ? 'nature-monthly'
@@ -464,15 +463,7 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                               : {}),
                           }}
                         >
-                          {tx.isFixed
-                            ? tx.expenseNature === 'RECURRING_YEARLY'
-                              ? 'Fixed Long-term'
-                              : 'Fixed Monthly'
-                            : tx.expenseNature === 'ONE_OFF'
-                            ? 'One-off'
-                            : tx.expenseNature === 'RECURRING_MONTHLY'
-                            ? 'Monthly'
-                            : 'Long-term'}
+                          {cycleLabel(tx)}
                         </span>
                       </div>
                     </div>

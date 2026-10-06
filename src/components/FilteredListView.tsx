@@ -15,6 +15,7 @@ import {
   Banknote,
 } from 'lucide-react';
 import { getCategoryIconElement, getCategoryColor, useCategories } from '../utils/categories';
+import { cycleLabel } from '../utils/fixedExpenses';
 
 interface FilteredListViewProps {
   transactions: ValuatedTransaction[];
@@ -641,7 +642,7 @@ export const FilteredListView: React.FC<FilteredListViewProps> = ({
                           fontWeight: 700,
                         }}
                       >
-                        {tx.expenseNature === 'RECURRING_YEARLY' ? 'Fixed Long-term' : 'Fixed Monthly'}
+                        {cycleLabel(tx)}
                       </span>
                     ) : (
                       <span
@@ -654,11 +655,7 @@ export const FilteredListView: React.FC<FilteredListViewProps> = ({
                         }`}
                         style={{ fontSize: '0.6875rem' }}
                       >
-                        {tx.expenseNature === 'ONE_OFF'
-                          ? 'One-off'
-                          : tx.expenseNature === 'RECURRING_MONTHLY'
-                          ? 'Monthly'
-                          : 'Long-term'}
+                        {cycleLabel(tx)}
                       </span>
                     )}
                   </div>

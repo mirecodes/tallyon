@@ -56,11 +56,14 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
 
   // Spent amounts
   const fixedSpent = breakdown.fixedTotal;
+  const fixedPending = breakdown.fixedPendingTotal;
   const flexibleSpent = breakdown.flexibleTotal;
   const totalSpent = breakdown.grandTotal;
 
   // Percentages relative to active budget
   const fixedPct = activeBudget > 0 ? (fixedSpent / activeBudget) * 100 : 0;
+  const fixedPendingPct = activeBudget > 0 ? (fixedPending / activeBudget) * 100 : 0;
+  const fixedExecutedPct = Math.min(100, fixedPct - fixedPendingPct);
   const flexiblePct = activeBudget > 0 ? (flexibleSpent / activeBudget) * 100 : 0;
   const totalUsagePct = activeBudget > 0 ? Math.round((totalSpent / activeBudget) * 100) : 0;
 
@@ -206,12 +209,23 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
           {/* Fixed Expense Bar (Red) */}
           <div
             style={{
-              width: `${Math.min(100, fixedPct)}%`,
+              width: `${fixedExecutedPct}%`,
               height: '100%',
               backgroundColor: 'var(--expense-rose)',
               transition: 'width 0.4s ease',
             }}
-            title={`Fixed Expenses: ${formatCurrency(fixedSpent, targetCurrency)}`}
+            title={`Fixed Expenses (executed): ${formatCurrency(fixedSpent - fixedPending, targetCurrency)}`}
+          />
+          {/* Upcoming Fixed Expense Bar (Translucent Red): scheduled after today */}
+          <div
+            style={{
+              width: `${Math.min(100 - fixedExecutedPct, fixedPendingPct)}%`,
+              height: '100%',
+              backgroundColor: 'var(--expense-rose)',
+              opacity: 0.35,
+              transition: 'width 0.4s ease',
+            }}
+            title={`Upcoming Fixed Expenses: ${formatCurrency(fixedPending, targetCurrency)}`}
           />
           {/* Flexible Spent Bar (Green) */}
           <div

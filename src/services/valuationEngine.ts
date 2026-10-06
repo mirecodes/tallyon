@@ -8,6 +8,7 @@ import type {
   ExpenseNature,
 } from '../types';
 import { toLocalDateString } from '../utils/currency';
+import { isPending } from '../utils/fixedExpenses';
 import { STATIC_FALLBACK_RATES } from '../repositories/LocalStorageExchangeRateRepository';
 
 export interface ValuationResult {
@@ -100,15 +101,19 @@ export function evaluateTransactions(
 
   // Calculate Fixed vs Flexible totals
   let fixedTotal = 0;
+  let fixedPendingTotal = 0;
   let flexibleTotal = 0;
+  const now = Date.now();
   for (const v of valuatedList) {
-    if (v.isFixed || v.expenseNature === 'RECURRING_MONTHLY') {
+    if (v.isFixed) {
       fixedTotal += v.convertedAmount;
+      if (isPending(v, now)) fixedPendingTotal += v.convertedAmount;
     } else {
       flexibleTotal += v.convertedAmount;
     }
   }
   const roundedFixedTotal = targetCurrency === 'KRW' ? Math.round(fixedTotal) : Number(fixedTotal.toFixed(2));
+  const roundedFixedPendingTotal = targetCurrency === 'KRW' ? Math.round(fixedPendingTotal) : Number(fixedPendingTotal.toFixed(2));
   const roundedFlexibleTotal = targetCurrency === 'KRW' ? Math.round(flexibleTotal) : Number(flexibleTotal.toFixed(2));
 
   // Format Category Breakdown
@@ -135,6 +140,7 @@ export function evaluateTransactions(
       targetCurrency,
       grandTotal,
       fixedTotal: roundedFixedTotal,
+      fixedPendingTotal: roundedFixedPendingTotal,
       flexibleTotal: roundedFlexibleTotal,
       byCategory,
       byNature,

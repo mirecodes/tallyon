@@ -614,7 +614,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                       Fixed Expense
                     </span>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                      Fixed commitment (Monthly repeats automatically).
+                      Fixed commitment. Repeats every month only with Monthly cycle.
                     </div>
                   </div>
                 </div>
@@ -775,7 +775,6 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                           value={row.expenseNature}
                           onChange={(e) => handleRowChange(idx, 'expenseNature', e.target.value as ExpenseNature)}
                           style={{ width: '100%', padding: '6px 4px' }}
-                          disabled={row.isFixed}
                         >
                           <option value="ONE_OFF">One-off</option>
                           <option value="RECURRING_MONTHLY">Monthly</option>
