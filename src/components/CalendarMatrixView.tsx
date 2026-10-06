@@ -3,6 +3,7 @@ import type { TargetCurrency, DailyAggregate, ValuatedTransaction } from '../typ
 import { formatCurrency, toLocalDateString } from '../utils/currency';
 import { ChevronLeft, ChevronRight, Calendar as CalIcon, Banknote } from 'lucide-react';
 import { cycleLabel } from '../utils/fixedExpenses';
+import { useCategories } from '../utils/categories';
 
 interface CalendarMatrixViewProps {
   calendarMap: Record<string, DailyAggregate>;
@@ -32,9 +33,47 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
   flexibleBudget = 0,
 }) => {
   const [internalDate, setInternalDate] = useState(() => new Date());
-  const [selectedDayData, setSelectedDayData] = useState<DailyAggregate | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('both');
   const modeIdx = VIEW_MODES.findIndex((m) => m.key === viewMode);
+  const { categories } = useCategories();
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  const toggleCategory = (cat: string) =>
+    setSelectedCategories((prev) => (prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]));
+
+  // Categories present this month (plus any still selected), in the user's category order
+  const categoryChips = React.useMemo(() => {
+    const present = new Set(selectedCategories);
+    for (const d of Object.values(calendarMap)) for (const t of d.transactions) present.add(t.category);
+    const ordered = categories.map((c) => c.name).filter((n) => present.has(n));
+    return [...ordered, ...[...present].filter((n) => !ordered.includes(n))];
+  }, [calendarMap, categories, selectedCategories]);
+
+  // Daily aggregates narrowed to the selected categories (all when none selected)
+  const filteredMap = React.useMemo(() => {
+    if (selectedCategories.length === 0) return calendarMap;
+    const out: Record<string, DailyAggregate> = {};
+    for (const [date, d] of Object.entries(calendarMap)) {
+      const transactions = d.transactions.filter((t) => selectedCategories.includes(t.category));
+      out[date] = {
+        date,
+        transactions,
+        itemCount: transactions.length,
+        totalAmount: transactions.reduce((s, t) => s + t.convertedAmount, 0),
+      };
+    }
+    return out;
+  }, [calendarMap, selectedCategories]);
+
+  const filteredMonthTotal = Object.values(filteredMap).reduce(
+    (s, d) => s + (viewMode === 'flex' ? flexibleOf(d) : d.totalAmount),
+    0
+  );
+
+  const selectedDayData: DailyAggregate | null = selectedDate
+    ? filteredMap[selectedDate] ?? { date: selectedDate, totalAmount: 0, itemCount: 0, transactions: [] }
+    : null;
 
   // Derive current viewing date from selectedYearMonth if provided
   const currentDate = React.useMemo(() => {
@@ -108,8 +147,9 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Calendar Card Container */}
-      <div className="card" style={{ padding: '1.5rem' }}>
+      {/* Calendar + category filter, stacked as one joined unit */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="card" style={{ padding: '1.5rem', borderRadius: '16px 16px 6px 6px' }}>
         {/* Top Controls */}
         <div
           style={{
@@ -212,7 +252,7 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
               // Calculate weekly total
               let weekTotal = 0;
               for (const cell of week) {
-                const d = cell.dateStr ? calendarMap[cell.dateStr] : undefined;
+                const d = cell.dateStr ? filteredMap[cell.dateStr] : undefined;
                 if (d) weekTotal += viewMode === 'flex' ? flexibleOf(d) : d.totalAmount;
               }
               const formattedWeekTotal = targetCurrency === 'KRW' ? Math.round(weekTotal) : Number(weekTotal.toFixed(2));
@@ -258,7 +298,7 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                       );
                     }
 
-                    const dayData = calendarMap[cell.dateStr];
+                    const dayData = filteredMap[cell.dateStr];
                     const isToday = cell.dateStr === todayStr;
                     const hasExpenses = dayData && dayData.totalAmount > 0;
                     const isSelected = selectedDayData?.date === cell.dateStr;
@@ -272,7 +312,7 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
                     return (
                       <div
                         key={cIdx}
-                        onClick={() => setSelectedDayData(dayData || { date: cell.dateStr!, totalAmount: 0, itemCount: 0, transactions: [] })}
+                        onClick={() => setSelectedDate(cell.dateStr)}
                         style={{
                           height: 76,
                           borderRadius: 10,
@@ -424,6 +464,44 @@ export const CalendarMatrixView: React.FC<CalendarMatrixViewProps> = ({
             })}
           </div>
         </div>
+      </div>
+
+      {/* Category Filter Card */}
+      <div className="card" style={{ padding: '1rem 1.5rem', borderRadius: '6px 6px 16px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginRight: 4 }}>
+            CATEGORY
+          </span>
+          {['All', ...categoryChips].map((cat) => {
+            const active = cat === 'All' ? selectedCategories.length === 0 : selectedCategories.includes(cat);
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => (cat === 'All' ? setSelectedCategories([]) : toggleCategory(cat))}
+                className="tag-pill-outline"
+                style={{
+                  backgroundColor: active ? 'var(--primary-blue)' : 'transparent',
+                  color: active ? '#FFFFFF' : 'var(--text-secondary)',
+                  borderColor: active ? 'var(--primary-blue)' : 'var(--border-light)',
+                  fontSize: '0.75rem',
+                }}
+              >
+                {cat}
+              </button>
+            );
+          })}
+          {selectedCategories.length > 0 && (
+            <span
+              className="tabular-nums"
+              style={{ marginLeft: 'auto', fontSize: '0.8125rem', fontWeight: 800, color: 'var(--primary-blue)' }}
+              title={viewMode === 'flex' ? 'Flexible spending in selected categories' : 'Spending in selected categories'}
+            >
+              {formatCurrency(filteredMonthTotal, targetCurrency)}
+            </span>
+          )}
+        </div>
+      </div>
       </div>
 
       {/* Selected Day Inspector Side/Bottom Sheet */}
