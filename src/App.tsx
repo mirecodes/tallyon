@@ -307,6 +307,7 @@ export const App: React.FC = () => {
               onSelectTransaction={handleOpenEditModal}
               selectedYearMonth={selectedYearMonth}
               onMonthChange={setSelectedYearMonth}
+              flexibleBudget={currentFlexibleBudgetInTarget}
             />
           )}
 

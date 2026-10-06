@@ -1,298 +1,238 @@
 # Tallyon - Multi-Currency Expense Tracker
 
-Tallyon is an intuitive, robust **multi-currency personal expense tracking and financial planning web application** designed for global citizens, international students, remote workers, and frequent travelers handling expenses in multiple currencies including Swiss Francs (**CHF**), US Dollars (**USD**), Euros (**EUR**), and South Korean Won (**KRW**).
+Tallyon is a **multi-currency personal expense tracker and monthly budget planner** for people who spend in several currencies at once: Swiss Francs (**CHF**), US Dollars (**USD**), Euros (**EUR**) and South Korean Won (**KRW**).
 
-Built on **React 19 + TypeScript (SPA)**, Tallyon seamlessly integrates with **Supabase (PostgreSQL + Row Level Security)** for persistent cloud storage and cross-device synchronization, while retaining an automatic **offline-first LocalStorage fallback mode**.
-
----
-
-## 📑 Table of Contents
-1. [Core Principles & Highlights](#-core-principles--highlights)
-2. [Interface Overview & User Guide](#-interface-overview--user-guide)
-3. [Supabase Technical Architecture & DDL Specification](#-supabase-technical-architecture--ddl-specification)
-4. [Step-by-Step Supabase Setup Guide](#-step-by-step-supabase-setup-guide)
-5. [Data Schema & Mappings (TypeScript vs Database)](#-data-schema--mappings-typescript-vs-database)
-6. [Architecture & Valuation Flow](#-architecture--valuation-flow)
-7. [LocalStorage Key Specifications (Offline Fallback)](#-localstorage-key-specifications-offline-fallback)
-8. [Getting Started & Development](#-getting-started--development)
+It is a **React 19 + TypeScript SPA** backed by **Supabase (PostgreSQL + Row Level Security)** for cloud sync, with an automatic **LocalStorage fallback** when Supabase is not configured or unreachable.
 
 ---
 
-## 🌟 Core Principles & Highlights
+## Table of Contents
 
-### 1. Zero Distortion Principle (Lossless Currency Storage)
-- Every transaction persistently records `originalAmount` and `originalCurrency`.
-- Changing target currencies or updating daily exchange rates never alters or overwrites the recorded transactions.
-- Valuation is performed dynamically by converting original amounts into the active view target currency through client-side valuation models (`ValuatedTransaction`).
-
-### 2. Standardized 5-Field Interface
-Transaction entry and modification modal dialogues adhere to a clean, unambiguous terminology:
-- **`title`**: Expense description / narrative.
-- **`amount`**: Numerical cost in original tender (positive float).
-- **`currency`**: Original tender code (`CHF`, `USD`, `EUR`, `KRW`).
-- **`category`**: Semantic classification.
-- **`cycle`**: Expense nature (`One-off`, `Monthly`, `Yearly`) and recurring fixed expense toggle.
-
-### 3. Pure English Canonical Categories & Custom Reordering
-- 11 canonical categories mapped to purpose-crafted icons and harmonious color accents:
-  - `Transport` (Transit / Bus icon)
-  - `Living` (Lifestyle & Daily / Coffee icon)
-  - `Food` (Dining & Groceries / Utensils icon)
-  - `Subscriptions` (Recurring Services / Repeat icon)
-  - `Administration` (Legal & Public Services / Landmark icon)
-  - `Housing` (Rent & Home / Home icon)
-  - `Health` (Medical & Fitness / HeartPulse icon)
-  - `Education` (Tuition & Books / GraduationCap icon)
-  - `Shopping` (Retail & Goods / ShoppingBag icon)
-  - `Travel` (Flights & Lodging / Plane icon)
-  - `Other` (Miscellaneous / Tag icon)
-- Accessible via the **Budget** tab strip card banner, allowing users to reorder items (`▲`, `▼`), customize color schemes, and synchronize order across all views and filters.
+1. [Core Principles](#core-principles)
+2. [Fixed Expenses & Cycles](#fixed-expenses--cycles)
+3. [Interface Guide](#interface-guide)
+4. [Supabase Architecture](#supabase-architecture)
+5. [Supabase Setup](#supabase-setup)
+6. [Data Schema](#data-schema)
+7. [Valuation Flow](#valuation-flow)
+8. [LocalStorage Keys](#localstorage-keys)
+9. [Development](#development)
 
 ---
 
-## 🖥️ Interface Overview & User Guide
+## Core Principles
 
-### 1. Global Navigation & Control Bar
-- **Brand & Cloud Sync Status**: Shows `Cloud Sync` (green badge) when connected to Supabase or `Local` (gray badge) in offline mode.
-- **Month Navigator**:
-  - `◀`, `▶`: Step backward or forward month-by-month.
-  - `This Month`: Instantly jump to the current calendar month.
-  - `Month Picker Popover`: Click the active month pill to trigger a calendar matrix popup for fast multi-year navigation.
-  - `ALL`: Switch to cumulative all-time overview mode to assess aggregate budgets and multi-month expenditures.
-- **Target Currency Selector**:
-  - Switch between `CHF`, `USD`, `EUR`, and `KRW` with a single click. All summary metrics, list amounts, and charts recalculate instantly.
+### Lossless currency storage
+- Every transaction stores its `originalAmount` and `originalCurrency`.
+- Switching the view currency or refreshing exchange rates never rewrites stored data. Converted amounts are computed on the fly (`ValuatedTransaction`).
 
-### 2. Tab Views
+### One entry form, six fields
+| Field | Meaning |
+| :--- | :--- |
+| `title` | Description of the expense |
+| `amount` | Positive amount in the original currency |
+| `currency` | `CHF`, `USD`, `EUR`, `KRW` |
+| `category` | One of the user-ordered categories |
+| `cycle` | `One-off`, `Monthly`, `Long-term` |
+| `fixed` / `cash` | Independent toggles (see below) |
 
-#### ① Transactions
-- **Real-Time Search & Multi-Filters**: Filter by text search, custom-ordered category chips, and expense cycles (`One-off`, `Monthly`, `Yearly`).
-- **Sorting Popover (Triple Horizontal Bar Pill)**:
-  - Alphabetical (`A → Z` / `Z → A`)
-  - Chronological (`Newest first` / `Oldest first`)
-  - Amount (`Highest first` / `Lowest first`)
-- **Pagination Navigation**: Select `5`, `10`, `15`, or `20` records per page with intuitive page navigation.
-- **Clean White Action Buttons**:
-  - `Pencil icon`: Edit transaction details.
-  - `Trash icon`: Delete transaction.
-- **Direct Currency Display**: Displays converted amount in target currency alongside the raw original currency amount (e.g., `€15.00`, `₩15,000`) without redundant labels.
-
-#### ② Dashboard & Analytics
-- **Total Expenditure KPI**: Visualizes current/cumulative spending against active budgets with real-time percentage indicators.
-- **Tri-Partite Expense Breakdown**:
-  - `Fixed Expenses`: Regular monthly commitments (rent, transit pass, gym).
-  - `Flexible Expenses`: Variable discretionary spending (dining, shopping, leisure).
-  - `Yearly Commitments`: Annual expenses amortized to a monthly equivalent.
-- **Category & Frequency Distributions**: Visual breakdown with interactive donut charts and progress meters.
-
-#### ③ Budget
-- **Target Monthly Budget**:
-  - `Monthly Base Budget`: Recurring baseline monthly threshold.
-  - `Extra Budget Adjustment (+/-)`: Temporary monthly adjustments.
-- **Category Settings & Order Strip**:
-  - Direct preview of current category sequence; click anywhere on the strip card to open the category manager modal.
-- **Active Fixed Expenses Management**:
-  - Prominent left-aligned **`TOTAL FIXED`** metric styled in 2.25rem bold blue, matching the Total Expenditure visual hierarchy.
-  - Visual category color tape accents, round icons, and unified trash icon buttons to remove a commitment starting from the active month onward.
-
-#### ④ Calendar Matrix View
-- **Monthly Grid**: Daily expenditure totals and transaction count indicators.
-- **Soft Weekend Tints**:
-  - Sunday (`SUN`): Subtle soft-red tint (`rgba(254, 226, 226, 0.4)`) with rose headers.
-  - Saturday (`SAT`): Subtle soft-blue tint (`rgba(219, 234, 254, 0.4)`) with royal blue headers.
-- **Standalone `WEEK TOTAL` Side Panel**:
-  - Distinctly separated via a dashed divider on the right to avoid confusing weekly aggregates with calendar days.
-- **Daily Inspector Popup**: Click any cell to inspect itemized transactions with original and converted valuations.
-
-#### ⑤ Floating Add Expense Modal
-- Triggered by the persistent floating pencil button in the lower-right corner.
-- Offers **Single Entry** and **Batch Entry** tabs for rapid expense input.
-- **Fixed** and **Cycle** are independent. Only **Fixed + Monthly** auto-projects into future months; editing a later month's copy makes it the template for every month after it.
+### Categories
+11 built-in categories (`Transport`, `Living`, `Food`, `Subscriptions`, `Administration`, `Housing`, `Health`, `Education`, `Shopping`, `Travel`, `Other`), each with an icon and color. Order and colors are editable from the **Budget** tab and apply to every view.
 
 ---
 
-## 🏗️ Supabase Technical Architecture & DDL Specification
+## Fixed Expenses & Cycles
 
-Tallyon communicates directly with Supabase via the client SDK (`@supabase/supabase-js`), secured with PostgreSQL **Row Level Security (RLS)**.
+**Fixed** and **Cycle** are two independent properties. Any combination is allowed, and the badge shows both (e.g. `Fixed One-off`, `Fixed Monthly`, `Fixed Long-term`, `Monthly`).
+
+| Fixed | Cycle | Counted as | Repeats into later months |
+| :---: | :--- | :--- | :---: |
+| ✅ | Monthly | Fixed | ✅ |
+| ✅ | One-off / Long-term | Fixed | ❌ |
+| ❌ | any | Flexible | ❌ |
+
+### Auto-repeat (Fixed + Monthly only)
+- A Fixed Monthly entry is projected into every following month, on the same day of month and at the same time. Days that don't exist (e.g. the 31st in February) move to the last day of that month.
+- Projected copies are virtual (not stored) until you edit them.
+
+### Editing a later month
+- Editing a projected copy saves it as a real entry in that month, linked to the original (`parentFixedId`).
+- **The most recently dated entry in the chain is the template for every month after it.** If the rent changes in April, May onward copies April's amount, date and time; earlier months keep the original.
+
+### Stopping
+- Deleting a Fixed Monthly entry from a later month stops the whole chain from that month onward. Past months are kept.
+- Deleting a Fixed One-off / Long-term entry simply removes it.
+
+### Upcoming (not yet executed) fixed expenses
+Fixed entries dated after the current moment count as **upcoming**. They are included in all totals and drawn in **translucent red** in the expenditure bar, so you can see what is already committed but not yet paid.
+
+---
+
+## Interface Guide
+
+### Control bar
+- **Month navigator**: `◀` / `▶`, `This Month`, a month-picker popover, and `ALL` for the cumulative view.
+- **Currency selector**: `CHF`, `USD`, `EUR`, `KRW`. All amounts and charts recalculate instantly.
+
+### Total Expenditure card (all tabs)
+- Total spending against the monthly budget, or against the cumulative budget in `ALL`.
+- Stacked bar: **red** = executed fixed, **translucent red** = upcoming fixed, **green** = flexible.
+- In `ALL`, Fixed Monthly copies are included for every month from the first entry through the current month.
+
+### Dashboard / Analytics
+- Fixed vs. flexible breakdown.
+- Cycle breakdown: Long-term Commitments, Monthly, One-off.
+- Category donut chart with legend.
+
+### Calendar
+- Monthly grid with weekend tints (Sunday soft red, Saturday soft blue) and a separate `WEEK TOTAL` column.
+- Each day shows:
+  - **Flexible spending** for that day in gray text.
+  - The **daily total** in a liquid-glass pill.
+- **Overspending days**: the flexible amount turns **bold red** when it exceeds
+
+  $$\frac{2 \times \text{monthly flexible budget}}{\text{days in month}}$$
+
+  where *flexible budget = monthly budget − fixed expenses*.
+- Click a day to see its transactions with original and converted amounts.
+
+### Transactions
+- Text search, category chips and cycle filters.
+- Sort by title, date or amount; 5 / 10 / 15 / 20 rows per page.
+- Edit (pencil) and delete (trash) per row.
+
+### Budget
+- **Monthly budget** = base budget + extra adjustment (+/−). Fixed budget is auto-calculated from fixed expenses; flexible budget is the rest.
+- **Active Fixed Expenses** for the month, in two sections:
+  - **Fixed Monthly**: repeating.
+  - **Fixed Long-term / One-off**: non-repeating, collapsible.
+- In `ALL`, shows cumulative budget vs. cumulative spending from a configurable start month.
+
+### Add Expense
+- The floating pencil button (bottom right) opens **Single** and **Batch** entry. Fixed, Cycle and Cash can be set per row.
+
+---
+
+## Supabase Architecture
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │               GitHub Pages (React 19 + TypeScript SPA)                 │
-│                                                                        │
-│   [UI Layer: Calendar, Transactions, Dashboard, Budget, Modals]        │
+│   [UI: Calendar, Transactions, Dashboard, Budget, Modals]              │
 │                                 │                                      │
-│                                 ▼                                      │
-│            [Valuation Engine & Presentation Aggregators]               │
+│   [Fixed-expense projection → Valuation engine → Aggregates]           │
 │                                 │                                      │
-│                                 ▼                                      │
-│               [Supabase Repository Layer + Fallback]                   │
+│   [Supabase repositories + LocalStorage fallback]                      │
 └─────────────────────────────────┬──────────────────────────────────────┘
-                                  │ HTTPS / WSS (Supabase JS Client)
-                                  ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                        Supabase Cloud Platform                         │
-│                                                                        │
-│   ├── Auth Service: Anonymous Sign-in / OAuth (JWT verification)       │
-│   │                                                                    │
-│   └── PostgreSQL Engine                                                │
-│        ├── RLS Policies (auth.uid() = user_id enforcement)             │
-│        ├── public.transactions (User's individual expense entries)     │
-│        ├── public.monthly_budgets (User's monthly budget allocations)  │
-│        ├── public.user_categories (Custom category order and styling)  │
-│        └── public.exchange_rates (Daily exchange rates cache)          │
+                                  │ HTTPS (supabase-js)
+┌─────────────────────────────────▼──────────────────────────────────────┐
+│ Supabase                                                               │
+│   Auth: anonymous sign-in, Google OAuth                                │
+│   PostgreSQL + RLS (auth.uid() = user_id)                              │
+│     public.transactions · public.monthly_budgets                       │
+│     public.user_categories · public.exchange_rates                     │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-The complete database initialization script is provided in [`supabase_schema.sql`](file:///Users/mireflare/Documents/Codes/tallyon/supabase_schema.sql).
+The full DDL is in [`supabase_schema.sql`](supabase_schema.sql).
 
 ---
 
-## 🛠️ Step-by-Step Supabase Setup Guide
+## Supabase Setup
 
-Follow these steps in your Supabase project dashboard:
-
-### Step 1: Create a Supabase Project
-1. Log in to [supabase.com](https://supabase.com/) and click **New Project**.
-2. Set a name (e.g. `tallyon`) and database password, then choose the region nearest to your users.
-
-### Step 2: Enable Anonymous Authentication
-Tallyon allows users to use the app immediately without requiring a password, while securely isolating data per device/browser session.
-1. In your Supabase dashboard, navigate to **Authentication** $\to$ **Sign In / Up** $\to$ **User Signups**.
-2. Toggle on **"Allow anonymous sign-ins"**.
-3. Click **Save**.
-
-### Step 3: Execute Database DDL & RLS Policies
-1. In your Supabase dashboard, click **SQL Editor** from the left navigation menu.
-2. Click **New Query**.
-3. Copy and paste the contents of [`supabase_schema.sql`](file:///Users/mireflare/Documents/Codes/tallyon/supabase_schema.sql) into the query editor.
-4. Click **Run** (`Cmd + Enter` or `Ctrl + Enter`).
-5. Confirm that `transactions`, `monthly_budgets`, `user_categories`, and `exchange_rates` tables have been created with RLS enabled.
-
-### Step 4: Retrieve API Keys & Configure Environment
-1. In your Supabase dashboard, navigate to **Project Settings** (gear icon) $\to$ **API**.
-2. Copy:
-   - **Project URL** (under *Project URL*)
-   - **anon public key** (under *Project API keys*)
-3. Create a local `.env` file in the project root based on `.env.example`:
-```bash
-cp .env.example .env
-```
-4. Fill in your credentials:
-```env
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-public-key
-```
-5. If deploying to **GitHub Pages**, navigate to **GitHub Repository Settings** $\to$ **Secrets and variables** $\to$ **Actions** and add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+1. **Create a project** at [supabase.com](https://supabase.com/).
+2. **Enable anonymous sign-in**: Authentication → Sign In / Up → *Allow anonymous sign-ins*.
+3. **(Optional) Enable Google sign-in**: Authentication → Providers → Google.
+4. **Configure redirect URLs**: Authentication → URL Configuration.
+   - **Site URL**: your production URL (e.g. `https://<user>.github.io/tallyon/`).
+   - **Redirect URLs**: add every origin you sign in from, e.g. `http://localhost:5173/**` and `https://<user>.github.io/tallyon/**`.
+   - If a URL is missing here, Supabase falls back to the Site URL. That's why a local login can land on GitHub Pages.
+5. **Create tables & policies**: SQL Editor → paste [`supabase_schema.sql`](supabase_schema.sql) → Run.
+6. **Configure the environment**: copy the Project URL and anon key from Project Settings → API.
+   ```bash
+   cp .env.example .env
+   ```
+   ```env
+   VITE_SUPABASE_URL=https://your-project-id.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-public-key
+   ```
+   For GitHub Pages, add the same two values as repository secrets (Settings → Secrets and variables → Actions).
 
 ---
 
-## 💾 Data Schema & Mappings (TypeScript vs Database)
+## Data Schema
 
-### 1. Database Table vs Domain Entity Mapping
-The repository layer automatically maps between database `snake_case` rows and frontend domain `camelCase` entities:
-
-| PostgreSQL Column (`snake_case`) | Domain Field (`camelCase`) | Type | Description |
+| PostgreSQL column | Domain field | Type | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | `id` | `UUID` / `string` | Unique record identifier |
-| `user_id` | *(Handled by auth)* | `UUID` / `string` | Supabase authenticated user ID (`auth.uid()`) |
-| `description` | `description` | `TEXT` / `string` | Title or narrative of transaction |
-| `transaction_time` | `transactionTime` | `TIMESTAMPTZ` / `string` | ISO-8601 UTC timestamp |
-| `original_amount` | `originalAmount` | `NUMERIC(14,2)` / `number` | Positive amount in original currency |
-| `original_currency` | `originalCurrency` | `VARCHAR(3)` / `CurrencyCode` | Tender code (`CHF`, `USD`, `EUR`, `KRW`) |
-| `category` | `category` | `TEXT` / `string` | Category identifier |
-| `expense_nature` | `expenseNature` | `ENUM` / `ExpenseNature` | `'ONE_OFF'`, `'RECURRING_MONTHLY'`, `'RECURRING_YEARLY'` |
-| `is_fixed` | `isFixed` | `BOOLEAN` / `boolean` | Fixed recurring commitment flag |
-| `is_auto_generated` | `isAutoGenerated` | `BOOLEAN` / `boolean` | Projected entry from previous fixed expense |
-| `parent_fixed_id` | `parentFixedId` | `UUID` / `string?` | Originating recurring transaction ID |
-| `stopped_after_month`| `stoppedAfterMonth` | `VARCHAR(7)` / `string?` | `YYYY-MM` month after which recurring stops |
-| `created_at` | `createdAt` | `TIMESTAMPTZ` / `string` | Timestamp of creation |
-| `updated_at` | `updatedAt` | `TIMESTAMPTZ` / `string` | Timestamp of update |
+| `id` | `id` | `UUID` | Record ID |
+| `user_id` | *(auth)* | `UUID` | `auth.uid()` |
+| `description` | `description` | `TEXT` | Title |
+| `transaction_time` | `transactionTime` | `TIMESTAMPTZ` | ISO-8601 UTC |
+| `original_amount` | `originalAmount` | `NUMERIC(14,2)` | Positive amount |
+| `original_currency` | `originalCurrency` | `VARCHAR(3)` | `CHF`, `USD`, `EUR`, `KRW` |
+| `category` | `category` | `TEXT` | Category name |
+| `expense_nature` | `expenseNature` | `ENUM` | Cycle: `ONE_OFF` (One-off), `RECURRING_MONTHLY` (Monthly), `RECURRING_YEARLY` (Long-term) |
+| `is_fixed` | `isFixed` | `BOOLEAN` | Fixed flag, independent of cycle |
+| `is_cash` | `isCash` | `BOOLEAN` | Paid in cash |
+| `is_auto_generated` | `isAutoGenerated` | `BOOLEAN` | Projected copy (virtual) |
+| `parent_fixed_id` | `parentFixedId` | `UUID?` | Root of the Fixed Monthly chain |
+| `stopped_after_month` | `stoppedAfterMonth` | `VARCHAR(7)?` | `YYYY-MM` from which the chain stops |
+| `created_at` / `updated_at` | `createdAt` / `updatedAt` | `TIMESTAMPTZ` | Timestamps |
 
 ---
 
-## 🔄 Architecture & Valuation Flow
+## Valuation Flow
 
 ```mermaid
 flowchart TD
-    subgraph Storage [Persistent Storage Layer]
-        A[(Supabase: public.transactions)]
-        B[(Supabase: public.exchange_rates)]
-        C[(Supabase: public.monthly_budgets)]
-        D[(Supabase: public.user_categories)]
-        Fallback[(Offline Fallback: LocalStorage)]
-    end
-
-    subgraph Valuation [Valuation Engine]
-        A -->|Raw Transactions: originalAmount & originalCurrency| E[Valuation Engine / Hook]
-        B -->|Daily Exchange Rates| E
-        Target[Selected Target Currency: KRW/CHF/USD/EUR] --> E
-        
-        E -->|Formula: Amount * Rate_orig / Rate_target| F[ValuatedTransaction View Model]
-    end
-
-    subgraph Presentation [UI Presentation Layer]
-        F --> G[Transactions View: Sorting & Pagination]
-        F --> H[Dashboard & Analytics: Visual Breakdowns]
-        F --> I[Calendar Matrix: Daily Totals & Week Total Panel]
-        C --> J[Budget View: Target Budget vs Actual Spent]
-        F --> J
-        D -->|Sequence & Color Metadata| G
-        D -->|Sequence & Color Metadata| J
-    end
+    A[(transactions)] --> P[Fixed-expense projection<br/>scopeMonth / scopeAll]
+    P --> E[Valuation engine]
+    B[(exchange_rates)] --> E
+    T[Target currency] --> E
+    E --> V[ValuatedTransaction list]
+    E --> C[Calendar daily aggregates]
+    E --> K[Breakdown: fixed / upcoming fixed / flexible / category / cycle]
+    V --> UI[Transactions · Budget]
+    C --> UI2[Calendar]
+    K --> UI3[Total Expenditure · Dashboard · Budget]
+    BU[(monthly_budgets)] --> UI3
 ```
 
-### Dynamic Valuation Formula
-Exchange rates use South Korean Won (`KRW`) as the intermediate anchor currency (`baseCurrency: 'KRW'`):
+KRW is the anchor currency:
+
 $$\text{Amount}_{\text{KRW}} = \text{originalAmount} \times \text{rates}[\text{originalCurrency}]$$
 $$\text{convertedAmount} = \frac{\text{Amount}_{\text{KRW}}}{\text{rates}[\text{targetCurrency}]}$$
 
-- When `originalCurrency === targetCurrency`, no conversion rate is applied, preserving the exact numerical amount.
-- Floating-point discrepancies are safeguarded via `safeAdd` and currency-specific formatting (`formatCurrency`).
+When the original and target currency match, the amount is used as-is.
 
 ---
 
-## 🔑 LocalStorage Key Specifications (Offline Fallback)
+## LocalStorage Keys
 
-If Supabase credentials are not provided or the network is unavailable, Tallyon seamlessly operates in local offline mode using browser LocalStorage:
-
-| Key | Schema Description | Purpose |
-| :--- | :--- | :--- |
-| `@app/transactions` | `Transaction[]` | Raw, immutable record of all user expense entries |
-| `@app/budgets` | `Record<string, MonthlyBudget>` | Keyed by `YYYY-MM` storing user budget allocations |
-| `@app/custom_categories_v1` | `CategoryDefinition[]` | User-defined category sequencing and styling |
-| `@app/exchange_rates` | `Record<string, ExchangeRateRecord>` | Keyed by `YYYY-MM-DD` historical exchange rates |
+| Key | Content |
+| :--- | :--- |
+| `@app/transactions` | `Transaction[]` |
+| `@app/budgets` | `Record<YYYY-MM, MonthlyBudget>` |
+| `@app/custom_categories_v1` | `CategoryDefinition[]` |
+| `@app/exchange_rates` | `Record<YYYY-MM-DD, ExchangeRateRecord>` |
 
 ---
 
-## 🚀 Getting Started & Development
+## Development
 
-### Prerequisites
-- Node.js 18.0 or higher
-- npm, yarn, or pnpm
+Requires Node.js 18+ (the self-check below needs Node 22.6+ for native TypeScript).
 
-### Installation & Local Run
 ```bash
-# Clone repository
-git clone <repository-url>
-cd tallyon
-
-# Install dependencies
 npm install
-
-# (Optional) Configure Supabase credentials
-cp .env.example .env
-
-# Start local development server
-npm run dev
+cp .env.example .env    # optional: Supabase credentials
+npm run dev             # http://localhost:5173
 ```
 
-### Production Build & Linting
 ```bash
-# TypeScript verification & Vite production bundling
-npm run build
-
-# Run code linter
-npm run lint
+npm run build                              # type-check + production build
+npm run lint                               # oxlint
+node src/utils/fixedExpenses.check.ts      # fixed-expense projection self-check
 ```
 
----
-**Tallyon** • Modern Multi-Currency Expense Tracker built with React 19, TypeScript, Supabase, and Repository Architecture.
+### Deployment
+Every push to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), which builds with the Supabase secrets and publishes `dist/` to GitHub Pages.
