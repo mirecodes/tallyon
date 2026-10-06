@@ -93,6 +93,7 @@ Fixed entries dated after the current moment count as **upcoming**. They are inc
   1. Daily total + flexible spending (default)
   2. Daily total only
   3. Flexible spending only (the week column then sums flexible spending)
+- A **category filter** card sits right under the calendar. Pick one or more categories to see only their daily, weekly and monthly spending; `All` clears the filter.
 - **Overspending days**: the flexible amount turns **bold red** when it exceeds
 
   $$\frac{2 \times \text{monthly flexible budget}}{\text{days in month}}$$
